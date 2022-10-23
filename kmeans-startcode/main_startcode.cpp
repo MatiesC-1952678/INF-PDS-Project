@@ -147,7 +147,13 @@ int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFile
 		return -1;
 	}
 
-	// TODO: load dataset
+	// TODO: load dataset - Yarne
+	static size_t rows = 500;
+	static size_t cols = 2;
+	std::vector<double> allData;
+	std::ifstream infile(inputFile);
+	readData(infile,allData, rows, cols);
+	// TODO: load dataset - Yarne
 
 	// This is a basic timer from std::chrono ; feel free to use the appropriate timer for
 	// each of the technologies, e.g. OpenMP has omp_get_wtime()
