@@ -148,8 +148,8 @@ int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFile
 	}
 
 	// TODO: load dataset - Yarne
-	static size_t rows = 500;
-	static size_t cols = 2;
+	static size_t rows = 0; // Will reset in the readData function anyways
+	static size_t cols = 0; // Will reset in the readData function anyways
 	std::vector<double> allData;
 	std::ifstream infile(inputFile);
 	readData(infile,allData, rows, cols);
