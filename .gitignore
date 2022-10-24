@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Data
+kmeans-startcode/data
+kmeans-startcode/output
