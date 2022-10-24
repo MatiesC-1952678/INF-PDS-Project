@@ -2,15 +2,43 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
-#include <limits>
 #include "CSVReader.hpp"
 #include "CSVWriter.hpp"
 #include "rng.h"
 #include "timer.h"
-#include "structs.h"
-//#include "cluster.h"
 
-typedef std::vector<std::vector<Point>> pointMatrix;
+struct point{
+	std::vector<double> datapoints;
+
+	point(){};
+
+	~point(){};
+
+	void addDataPoint(const double inputDataPoint){
+		datapoints.push_back(inputDataPoint);
+	}
+
+	double getDataPoint(const size_t index){
+		return datapoints[index];
+	}
+
+	size_t getSize(){
+		return datapoints.size();
+	}
+
+	void add(point &p){
+		for (size_t i = 0; i < p.getSize(); i++)
+			datapoints[i] += p.getDataPoint(i);
+	}
+
+	void divide(const size_t divider)
+	{
+		for (size_t i = 0; i < datapoints.size(); i++)
+			datapoints[i] /= divider;
+	}
+
+};
+
 
 void usage()
 {
@@ -88,7 +116,7 @@ Arguments:
 
 // Helper function to read input file into allData, setting number of detected
 // rows and columns. Feel free to use, adapt or ignore
-void readData(std::ifstream &input, std::vector<double> &allData, size_t &numRows, size_t &numCols)
+void readData(std::ifstream &input, std::vector<point> &allData, size_t &numRows, size_t &numCols)
 {
 	if (!input.is_open())
 		throw std::runtime_error("Input file is not open");
@@ -113,8 +141,11 @@ void readData(std::ifstream &input, std::vector<double> &allData, size_t &numRow
 		else if (numColsExpected != (int)row.size())
 			throw std::runtime_error("Incompatible number of colums read in line " + std::to_string(line) + ": expecting " + std::to_string(numColsExpected) + " but got " + std::to_string(row.size()));
 
-		for (auto x : row)
-			allData.push_back(x);
+		point p;
+		for (auto x : row){
+			p.addDataPoint(x);
+		}
+		allData.push_back(p);
 
 		line++;
 	}
@@ -136,108 +167,61 @@ FileCSVWriter openDebugFile(const std::string &n)
 	return f;
 }
 
-// PSEUDO CODE
-// bestClusters = None 
-// bestDistanceSquaredSum = Infinity
-// 
-// for r in range(repetitions):
-// 		centroids = choose_centroids_at_random(k) # (use Rng to pick k random points) 
-// 		clusters = [ -1, ..., -1 ] 	# initially we don't know the closest centroid index
-// 									# for each point
-// 		changed = True 
-// 		while changed:
-// 			changed = False 
-// 			distanceSquaredSum = 0
-// 
-// 			for p in range(numberOfPoints)
-// 				newCluster, dist = find_closest_centroid_index_and_distance(p, centroids) 
-// 				distanceSquaredSum += dist
-// 				
-//				if newCluster != clusters[p]:
-//					clusters[p] = newCluster 
-//					changed = True
-// 
-//			if changed: # re-calculate the centroids based on current clustering 
-//				for j in range(k):
-//					centroids[j] = average_of_points_with_cluster(j)
-//					
-//			# Keep track of best clustering
-//			if distanceSquaredSum < bestDistanceSquaredSum:
-//				bestClusters = clusters 
-//				bestDistanceSquaredSum = distanceSquaredSum
-//
-
-Point choose_centroids_at_random(const int k) {
-	//TODO yarne
+std::vector<size_t> choose_centroids_at_random(const int k, Rng &rng){
+	
+	std::vector<size_t> centroids(k);
+	rng.pickRandomIndices(k, centroids);
+	std::cout << centroids[2];
+	return centroids;
 }
 
-std::vector<int> find_closest_centroid_index_and_distance(float &dist, const int p, std::vector<int>& centroids) {
-	//TODO yarne
+void choose_centroids_at_random(const int numClusters, const int numberOfPoints, Rng &rng, std::vector<point> &centroids, std::vector<point> &allpoints){
+	std::vector<size_t> indices(numClusters);
+	rng.pickRandomIndices(numberOfPoints, indices);
+	for (size_t i = 0; i < numClusters; i++)
+		centroids[i] = allpoints[indices[i]];
 }
 
-//float or int???
-int average_of_points_with_cluster(const int j) {
-	//TODO
-}
-
-void initCentroidsMatrix(const pointMatrix& cm, const int numClusters, const int reps) {
-	for (int i = 0; i < reps; ++i) {
-
-	}
-}
-
-void kmeansSingleRun(	const float &bestDist, 
-						std::vector<int>* bestClusters, 
-						std::vector<Point>& centroids, 
-						std::vector<int>& clusters, 
-						const int numPoints				) {
-	bool changed = true;
-	while (changed) {
-		changed = false;
-		float distanceSquaredSum = 0;
-
-		for (int p = 0; p < numPoints; ++p) {
-			float dist{};
-			std::vector<int> newCluster = find_closest_centroid_index_and_distance(dist, p, centroids);
-			distanceSquaredSum += dist;
-
-			if (!std::equal(newCluster, clusters[p])) {
-				clusters[p] = newCluster; //copy constructor?
-				changed = true;
-			}
+int find_closest_centroid_index_and_distance(float &dist, point &p,std::vector<point> &centroids){
+	point closestCentroid;
+	int indexCentroid;	
+	for (size_t c = 0; c < centroids.size(); c++)
+	{	
+		double currentdist = 0;
+		for (size_t i = 0; i < p.getSize() - 1; i++) // p.getSize() or dimension
+		{
+			currentdist += pow((p.getDataPoint(i) - centroids[c].getDataPoint(i)),2);
 		}
-
-		if (changed) {
-			for (int j = 0; j < k; ++j) {
-				centroids[j] = average_of_points_with_cluster(j)
-				
-			}
+		if (dist == -1){
+			closestCentroid = centroids[c];
+			dist = currentdist;
+			indexCentroid = c;
 		}
-
-		if (distanceSquaredSum < bestDist) {
-			bestClusters = clusters;
-			bestDistSquaredSum = distanceSquaredSum;
+		else if(dist > currentdist){
+			closestCentroid = centroids[c];
+			dist = currentdist;
+			indexCentroid = c;
 		}
 	}
+	return indexCentroid;
 }
 
-/**
- * possible optimizations:
- * 	- use best cluster, smallest integer representative (uchar f.e.) which means there can be max 255 clusters 
-*/
-int kmeansReps(const int numPoints, const int numClusters, const int reps) {
-	std::vector<int>* bestClusters{}; 
-	std::vector<int> clusters{numPoints, -1};
-	// [-1, -1, ..., -1] x number of points
-	float bestDistanceSquaredSum = std::numeric_limits<float>::max(); //infinity
-	pointMatrix centroidsMatrix {};
-	initCentroidsMatrix(centroidsMatrix, numClusters, reps);
-
-
-	for (int r = 0; r < reps; ++r) {
-		kmeansSingleRun(centroidsMatrix[r], clusters)
+point average_of_points_with_cluster(const size_t centroidID, const std::vector<int> &clusters, std::vector<point> &allpoints){
+// cluster -> punt -> welke centroid
+	point avgPoint;
+	size_t numberOfPoints = 0;
+	for (size_t i = 0; i < clusters.size(); i++)
+	{
+		if (clusters[i] == centroidID){
+			if(i==1)
+				avgPoint = allpoints[i];
+			else
+				avgPoint.add(allpoints[i]);
+			numberOfPoints++;
+		}
 	}
-
+	avgPoint.divide(numberOfPoints);
+	return avgPoint;
 }
 
 int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFileName,
@@ -257,11 +241,11 @@ int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFile
 	}
 
 	// TODO: load dataset - Yarne
-	static size_t rows = 0; // Will reset in the readData function anyways
-	static size_t cols = 0; // Will reset in the readData function anyways
-	std::vector<double> allData;
+	static size_t numberOfPoints = 0; // Will reset in the readData function anyways = rows
+	static size_t dimension = 0; // Will reset in the readData function anyways = cols
+	std::vector<point> allpoints;
 	std::ifstream infile(inputFile);
-	readData(infile,allData, rows, cols);
+	readData(infile,allpoints, numberOfPoints, dimension);
 	// TODO: load dataset - Yarne
 
 	// This is a basic timer from std::chrono ; feel free to use the appropriate timer for
@@ -277,11 +261,33 @@ int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFile
 	for (int r = 0 ; r < repetitions ; r++)
 	{
 		size_t numSteps = 0;
+
+		std::vector<point> centroids(numClusters);
+		std::vector<int> clusters{(int)numberOfPoints, -1};
+
+		//choose_centroids_at_random - Yarne
+		choose_centroids_at_random(numClusters,numberOfPoints,rng,centroids,allpoints);
+		//choose_centroids_at_random - Yarne
+
+		for(auto p : allpoints){
+		//find_closest_centroid_index_and_distance - Yarne
+			float dist = -1;
+			int newCluster = 0;
+			newCluster = find_closest_centroid_index_and_distance(dist,p,centroids);
+		//find_closest_centroid_index_and_distance - Yarne
+
+			for (size_t j = 0; j < numClusters; j++)
+			{
+				//average_of_points_with_cluster - Yarne
+				centroids[j] = average_of_points_with_cluster(j, clusters, allpoints);
+				//average_of_points_with_cluster - Yarne
+			}
+			              
+		}
+		
         // TODO: perform an actual k-means run, starting from random centroids
         //       (see rng.h)
 		std::cerr << "TODO: implement this" << std::endl;
-
-		kmeansReps(1, 1, 1);
 
 		stepsPerRepetition[r] = numSteps;
 
