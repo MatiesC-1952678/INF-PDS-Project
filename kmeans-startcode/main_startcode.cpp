@@ -160,11 +160,6 @@ FileCSVWriter openDebugFile(const std::string &n)
 //			if changed: # re-calculate the centroids based on current clustering 
 //				for j in range(k):
 //					centroids[j] = average_of_points_with_cluster(j)
-//					changed = True
-//
-//			if changed: # re-calculate the centroids based on current clustering 
-//				for j in range(k):
-//					centroids[j] = average_of_points_with_cluster(j)
 //					
 //			# Keep track of best clustering
 //			if distanceSquaredSum < bestDistanceSquaredSum:
@@ -176,24 +171,71 @@ Point choose_centroids_at_random(const int k) {
 	//TODO yarne
 }
 
+std::vector<int> find_closest_centroid_index_and_distance(float &dist, const int p, std::vector<int>& centroids) {
+	//TODO yarne
+}
+
+//float or int???
+int average_of_points_with_cluster(const int j) {
+	//TODO
+}
+
 void initCentroidsMatrix(const pointMatrix& cm, const int numClusters, const int reps) {
 	for (int i = 0; i < reps; ++i) {
 
 	}
 }
-	/**
-	 * possible optimizations:
-	 * 	- use best cluster, smallest integer representative (uchar f.e.) which means there can be max 255 clusters 
-	*/
-int kmeansRun(const int numPoints, const int numClusters, const int reps) {
-	std::vector<int> bestClusters{numPoints, -1}; // [-1, -1, ..., -1] x number of points
+
+void kmeansSingleRun(	const float &bestDist, 
+						std::vector<int>* bestClusters, 
+						std::vector<Point>& centroids, 
+						std::vector<int>& clusters, 
+						const int numPoints				) {
+	bool changed = true;
+	while (changed) {
+		changed = false;
+		float distanceSquaredSum = 0;
+
+		for (int p = 0; p < numPoints; ++p) {
+			float dist{};
+			std::vector<int> newCluster = find_closest_centroid_index_and_distance(dist, p, centroids);
+			distanceSquaredSum += dist;
+
+			if (!std::equal(newCluster, clusters[p])) {
+				clusters[p] = newCluster; //copy constructor?
+				changed = true;
+			}
+		}
+
+		if (changed) {
+			for (int j = 0; j < k; ++j) {
+				centroids[j] = average_of_points_with_cluster(j)
+				
+			}
+		}
+
+		if (distanceSquaredSum < bestDist) {
+			bestClusters = clusters;
+			bestDistSquaredSum = distanceSquaredSum;
+		}
+	}
+}
+
+/**
+ * possible optimizations:
+ * 	- use best cluster, smallest integer representative (uchar f.e.) which means there can be max 255 clusters 
+*/
+int kmeansReps(const int numPoints, const int numClusters, const int reps) {
+	std::vector<int>* bestClusters{}; 
+	std::vector<int> clusters{numPoints, -1};
+	// [-1, -1, ..., -1] x number of points
 	float bestDistanceSquaredSum = std::numeric_limits<float>::max(); //infinity
 	pointMatrix centroidsMatrix {};
 	initCentroidsMatrix(centroidsMatrix, numClusters, reps);
 
 
 	for (int r = 0; r < reps; ++r) {
-		
+		kmeansSingleRun(centroidsMatrix[r], clusters)
 	}
 
 }
@@ -239,7 +281,7 @@ int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFile
         //       (see rng.h)
 		std::cerr << "TODO: implement this" << std::endl;
 
-		kmeansRun(0, 0);
+		kmeansReps(1, 1, 1);
 
 		stepsPerRepetition[r] = numSteps;
 
