@@ -6,52 +6,7 @@
 #include "CSVWriter.hpp"
 #include "rng.h"
 #include "timer.h"
-
-// TODO@yarne: maybe put this in a seperate file (like my structs.h file)
-struct point
-{
-	std::vector<double> datapoints;
-
-	point() {
-		datapoints = std::vector<double>{};
-	};
-
-	~point(){};
-
-	void addDataPoint(const double inputDataPoint)
-	{
-		datapoints.push_back(inputDataPoint);
-	}
-
-	double getDataPoint(const size_t index)
-	{
-		return datapoints[index];
-	}
-
-	size_t getSize()
-	{
-		return datapoints.size();
-	}
-
-	void add(point &p)
-	{
-		if (datapoints.size() <= 0)
-			datapoints = std::vector<double>(p.getSize(), 0);
-
-		for (size_t i = 0; i < p.getSize(); i++)
-			datapoints[i] += p.getDataPoint(i);
-	}
-
-	void divide(const size_t divider)
-	{
-		for (size_t i = 0; i < datapoints.size(); i++)
-			datapoints[i] /= divider;
-	}
-};
-
-// typedef std::vector<std::vector<point>> PointMatrix;
-// TODO@ties: change vector to array for number of centroids, NOT for amount of steps -> cuz these are variable, repetitions are known
-// typedef std::vector<std::vector<int>> IntMatrix;
+#include "structs.h"
 
 void usage()
 {
@@ -154,7 +109,7 @@ void readData(std::ifstream &input, std::vector<point> &allData, size_t &numRows
 		else if (numColsExpected != (int)row.size())
 			throw std::runtime_error("Incompatible number of colums read in line " + std::to_string(line) + ": expecting " + std::to_string(numColsExpected) + " but got " + std::to_string(row.size()));
 
-		point p{};
+		point p{}; // Load in every Point (N dimensions) into a point struct
 		for (auto x : row)
 		{
 			p.addDataPoint(x);
@@ -181,61 +136,36 @@ FileCSVWriter openDebugFile(const std::string &n)
 	return f;
 }
 
-// PSEUDO CODE
-// bestClusters = None
-// bestDistanceSquaredSum = Infinity
-//
-// for r in range(repetitions):
-// 		centroids = choose_centroids_at_random(k) # (use Rng to pick k random points)
-// 		clusters = [ -1, ..., -1 ] 	# initially we don't know the closest centroid index
-// 									# for each point
-// 		changed = True
-// 		while changed:
-// 			changed = False
-// 			distanceSquaredSum = 0
-//
-// 			for p in range(numberOfPoints)
-// 				newCluster, dist = find_closest_centroid_index_and_distance(p, centroids)
-// 				distanceSquaredSum += dist
-//
-//				if newCluster != clusters[p]:
-//					clusters[p] = newCluster
-//					changed = True
-//
-//			if changed: # re-calculate the centroids based on current clustering
-//				for j in range(k):
-//					centroids[j] = average_of_points_with_cluster(j)
-//
-//			# Keep track of best clustering
-//			if distanceSquaredSum < bestDistanceSquaredSum:
-//				bestClusters = clusters
-//				bestDistanceSquaredSum = distanceSquaredSum
-//
-
-// Point choose_centroids_at_random(const pointMatrix& centroids, const int k);
-
-std::vector<size_t> choose_centroids_at_random(const int k, Rng &rng)
-{
-	std::vector<size_t> centroids(k);
-	rng.pickRandomIndices(k, centroids);
-	return centroids;
-}
-
-// TODO@yarne: Pretty sure dat pick random indices niet indices neemt van de totale punt vector ma gewoon random coordinaten maakt voor een nieuw centroid punt
-// DIT MOET GE DUS WSS AANPASSEN
-void choose_centroids_at_random(const int numClusters, const int numPoints, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
+/*
+	Chooses random points from the input file to use as centroids
+	@param numClusters: number of centroids needed
+	@param rng: class to retrieve random indices
+	@param centroids: a vector of random points from the input file
+	@param repetitions: the number of repetitions
+	@param allPoints: all the points from the input file
+	@pre centroids vector is empty
+	@post centroids is filled with random points
+*/
+void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
 {
 	for(int rep = 0; rep < repetitions; ++rep) {
 		std::vector<size_t> indices(numClusters);
-		rng.pickRandomIndices(numPoints, indices);
+		rng.pickRandomIndices(allPoints.size(), indices);
 		for (size_t i = 0; i < numClusters; i++)
 			centroids[numClusters*rep + i] = allPoints[indices[i]];
 	}
 }
 
-// int find_closest_centroid_index_and_distance(float &dist, const int p, std::vector<Point>& centroids)
-
-// TODO@yarne: I would remove the -1 special case and just make the distance MAXVALUE
+/*
+	Find the closest centroids index and distance for a given point
+	@param numClusters: number of centroids needed
+	@param dist: the distance to the closest centroid
+	@param centroids: a vector of random points from the input file
+	@param offset: the offset in the vectors to seperate repetitions
+	@pre dist is infinity
+	@post dist is the distance to the closest centroid
+	@return the index of the closest centroid
+*/
 int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids, const int numClusters, const size_t offset)
 {
 	point closestCentroid;
@@ -243,19 +173,19 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
+
 		for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
-		{
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
-		}
-		if (dist == -1)
+
+		if (dist == std::numeric_limits<double>::max())
 		{
 			closestCentroid = centroids[offset + c];
 			dist = currentdist;
 			indexCentroid = c;
 		}
-		else if (dist > currentdist)
+		else if (currentdist < dist)
 		{
-			closestCentroid = centroids[c];
+			closestCentroid = centroids[offset + c];
 			dist = currentdist;
 			indexCentroid = c;
 		}
@@ -263,9 +193,14 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 	return indexCentroid;
 }
 
-// //float or int???
-// Point average_of_points_with_cluster(const int j)
-
+/*
+	Average of all points from a given cluster
+	@param centroidIndex: the index of the centroid
+	@param clusters: vector with the closest centroid per point
+	@param clusterOffset: the offset in the cluster vector to seperate repetitions
+	@param allPoints: all the points from the input file
+	@return the average point from the cluster
+*/
 point average_of_points_with_cluster(const size_t centroidIndex, const std::vector<int> &clusters, const size_t clusterOffset, std::vector<point> &allPoints)
 {
 	point avgPoint{};
@@ -284,10 +219,10 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 
 /**
  * possible optimizations:
- * 	- use best cluster, smallest integer representative (uchar f.e.) which means there can be max 255 clusters
+ * 	- use best cluster
  */
 int kmeansReps(double &bestDistSquaredSum,
-			   size_t bestClusterOffset,
+			   size_t &bestClusterOffset,
 			   std::vector<point> &centroids,
 			   size_t centroidOffset,
 			   std::vector<int> &clusters,
@@ -307,13 +242,13 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		for (int p = 0; p < numPoints; ++p)
 		{
-			float dist{-1};
+			float dist = std::numeric_limits<float>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
 
 			if (newCluster != clusters[clusterOffset + p])
-			{							  // optim: comparer that's quick?
-				clusters[clusterOffset + p] = newCluster; // optim: copy constructor? -> make a move constructor? -> which is faster?
+			{
+				clusters[clusterOffset + p] = newCluster;
 				changed = true;
 			}
 		}
@@ -321,14 +256,12 @@ int kmeansReps(double &bestDistSquaredSum,
 		if (changed)
 		{
 			for (int j = 0; j < numClusters; ++j)
-			{
 				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
-			}
 		}
 
 		if (distanceSquaredSum < bestDistSquaredSum)
 		{
-			bestClusterOffset = clusterOffset; // Does this work with pointers?
+			bestClusterOffset = clusterOffset;
 			bestDistSquaredSum = distanceSquaredSum;
 		}
 	}
@@ -365,7 +298,7 @@ int kmeans(Rng &rng,
 	readData(infile, allPoints, numPoints, dimension);
 
 	// initialize BIG variabels
-	size_t bestClusterOffset{0}; // TODO@ties: shouldn't be a pointer, should be an offset in vector
+	size_t bestClusterOffset{0};
 	std::vector<int> clusters ((int)numPoints * repetitions, -1);
 	/**
 	 * with amount of -1 in the matrix = number of points * repetitions
@@ -381,7 +314,8 @@ int kmeans(Rng &rng,
 	 * abstract example: [p1, p2, p3 | p1, p2, p3]
 	 * here are 3 centroids for 3 repetitions made
 	*/
-	choose_centroids_at_random(numClusters, numPoints, rng, centroids, repetitions, allPoints);
+
+	choose_centroids_at_random(numClusters, rng, centroids, repetitions, allPoints);
 	
 	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
@@ -398,9 +332,7 @@ int kmeans(Rng &rng,
 	{
 		size_t numSteps = 0;
 
-		// TODO@ties: change numPoints & numClusters & num reps from a non hardcoded var!
-		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);;
-		std::cout << stepsPerRepetition[r] << "\n";
+		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);
 
 		// Make sure debug logging is only done on first iteration ; subsequent checks
 		// with is_open will indicate that no logging needs to be done anymore.
@@ -420,7 +352,10 @@ int kmeans(Rng &rng,
 	// Write the number of steps per repetition, kind of a signature of the work involved
 	csvOutputFile.write(stepsPerRepetition, "# Steps: ");
 	// Write best clusters to csvOutputFile, something like
-	// csvOutputFile.write( best cluster indices )
+
+	// Get best cluster from repetitions -> example output shows the first cluster, we use the best cluster for output
+	std::vector<int> bestCluster(&clusters[bestClusterOffset], &clusters[bestClusterOffset + numPoints]);
+	csvOutputFile.write(bestCluster);
 	return 0;
 }
 
@@ -432,7 +367,8 @@ int mainCxx(const std::vector<std::string> &args)
 	std::string inputFileName, outputFileName, centroidTraceFileName, clusterTraceFileName;
 	unsigned long seed = 0;
 
-	int numClusters = -1, repetitions = -1;
+	int numClusters = -1; 
+	int repetitions = -1;
 	int numBlocks = 1, numThreads = 1;
 	for (int i = 0; i < args.size(); i += 2)
 	{
@@ -465,7 +401,6 @@ int mainCxx(const std::vector<std::string> &args)
 		usage();
 
 	Rng rng(seed);
-
 	return kmeans(rng, inputFileName, outputFileName, numClusters, repetitions,
 				  numBlocks, numThreads, centroidTraceFileName, clusterTraceFileName);
 }
