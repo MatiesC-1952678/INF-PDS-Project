@@ -282,10 +282,10 @@ int kmeansReps(double &bestDistSquaredSum,
 	int steps = 0;
 
 	std::map<int, pair> distanceDict; //TODO@ties: optim -> move this one out of calc and to overhead (with clusters & centroids vectors init!)
-	std::vector<point> previousCentroids{};
+	//std::vector<point> previousCentroids{};
 	for(int i = 0; i < numClusters; ++i) {
 		distanceDict.insert(std::pair<int, pair>(i, pair()));
-		previousCentroids.push_back(point());
+		//previousCentroids.push_back(point());
 	}
 
 	while (changed)
@@ -320,7 +320,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		if (changed)
 		{
 			for (int j = 0; j < numClusters; ++j) {
-				previousCentroids[j] = centroids[centroidOffset + j]; //TODO@ties: move constructor?
+				//previousCentroids[j] = centroids[centroidOffset + j]; //TODO@ties: move constructor?
 				//centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 				pair current = distanceDict.at(j);
 				centroids[centroidOffset + j] = current.calcAvg();

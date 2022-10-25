@@ -34,6 +34,21 @@
             "cwd": "/home/matiesclaesen/Documents/INF-PDS-Project/kmeans-startcode/",
             "externalConsole": false,
          },
+         {
+            "name": "k5 rep10 seed@yarne 1000000x4",
+            "type": "cppdbg",
+            "request": "launch",
+            //"preLaunchTask": "Make g++-14",
+            "program": "/home/matiesclaesen/Documents/INF-PDS-Project/kmeans-startcode/kmeans",
+            "args": [
+                "--input", "data/1M_1000000x4.csv", 
+                "--output", "output/1M_1000000x4.o.csv",
+                "--k", "5",
+                "--repetitions", "10", 
+                "--seed", "1952226"],
+            "cwd": "/home/matiesclaesen/Documents/INF-PDS-Project/kmeans-startcode/",
+            "externalConsole": false,
+         },
     ]
 }
 
