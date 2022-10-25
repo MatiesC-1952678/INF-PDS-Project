@@ -167,57 +167,22 @@ FileCSVWriter openDebugFile(const std::string &n)
 //				bestDistanceSquaredSum = distanceSquaredSum
 //
 
-Point choose_centroids_at_random(const int k) {
+Point choose_centroids_at_random(const pointMatrix& centroids, const int k) {
 	//TODO yarne
 }
 
-std::vector<int> find_closest_centroid_index_and_distance(float &dist, const int p, std::vector<int>& centroids) {
+int find_closest_centroid_index_and_distance(float &dist, const int p, std::vector<Point>& centroids) {
 	//TODO yarne
 }
 
 //float or int???
-int average_of_points_with_cluster(const int j) {
+Point average_of_points_with_cluster(const int j) {
 	//TODO
 }
 
-void initCentroidsMatrix(const pointMatrix& cm, const int numClusters, const int reps) {
+void initCentroidsMatrix(const pointMatrix& centroids, const int numClusters, const int reps) {
 	for (int i = 0; i < reps; ++i) {
-
-	}
-}
-
-void kmeansSingleRun(	const float &bestDist, 
-						std::vector<int>* bestClusters, 
-						std::vector<Point>& centroids, 
-						std::vector<int>& clusters, 
-						const int numPoints				) {
-	bool changed = true;
-	while (changed) {
-		changed = false;
-		float distanceSquaredSum = 0;
-
-		for (int p = 0; p < numPoints; ++p) {
-			float dist{};
-			std::vector<int> newCluster = find_closest_centroid_index_and_distance(dist, p, centroids);
-			distanceSquaredSum += dist;
-
-			if (!std::equal(newCluster, clusters[p])) {
-				clusters[p] = newCluster; //copy constructor?
-				changed = true;
-			}
-		}
-
-		if (changed) {
-			for (int j = 0; j < k; ++j) {
-				centroids[j] = average_of_points_with_cluster(j)
-				
-			}
-		}
-
-		if (distanceSquaredSum < bestDist) {
-			bestClusters = clusters;
-			bestDistSquaredSum = distanceSquaredSum;
-		}
+		//choose_centroids_at_random(centroids, numClusters);
 	}
 }
 
@@ -225,24 +190,55 @@ void kmeansSingleRun(	const float &bestDist,
  * possible optimizations:
  * 	- use best cluster, smallest integer representative (uchar f.e.) which means there can be max 255 clusters 
 */
-int kmeansReps(const int numPoints, const int numClusters, const int reps) {
-	std::vector<int>* bestClusters{}; 
-	std::vector<int> clusters{numPoints, -1};
-	// [-1, -1, ..., -1] x number of points
-	float bestDistanceSquaredSum = std::numeric_limits<float>::max(); //infinity
-	pointMatrix centroidsMatrix {};
-	initCentroidsMatrix(centroidsMatrix, numClusters, reps);
-
+int kmeansReps(	double &bestDistSquaredSum, 
+				std::vector<int>* bestClusters, 
+				std::vector<Point>& centroids, 
+				std::vector<int>& clusters, 
+				const int numPoints,
+				const int numClusters, 
+				const int reps			) {
 
 	for (int r = 0; r < reps; ++r) {
-		kmeansSingleRun(centroidsMatrix[r], clusters)
+		bool changed = true;
+		while (changed) {
+			changed = false;
+			float distanceSquaredSum = 0;
+
+			for (int p = 0; p < numPoints; ++p) {
+				float dist{};
+				const int newCluster = find_closest_centroid_index_and_distance(dist, p, centroids);
+				distanceSquaredSum += dist;
+
+				if (newCluster != clusters[p]) { //optim: comparer that's quick?
+					clusters[p] = newCluster; //optim: copy constructor? -> make a move constructor? -> which is faster?
+					changed = true;
+				}
+			}
+
+			if (changed) {
+				for (int j = 0; j < numClusters; ++j) {
+					centroids[j] = average_of_points_with_cluster(j);
+				}
+			}
+
+			if (distanceSquaredSum < bestDistSquaredSum) {
+				bestClusters = &clusters; //Does this work with pointers?
+				bestDistSquaredSum = distanceSquaredSum;
+			}
+		}
 	}
 
 }
 
-int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFileName,
-           int numClusters, int repetitions, int numBlocks, int numThreads,
-           const std::string &centroidDebugFileName, const std::string &clusterDebugFileName)
+int kmeans(	Rng &rng, 
+			const std::string &inputFile, 
+			const std::string &outputFileName,
+           	int numClusters, 
+			int repetitions, 
+			int numBlocks, 
+			int numThreads,
+           	const std::string &centroidDebugFileName, 
+			const std::string &clusterDebugFileName		)
 {
 	// If debug filenames are specified, this opens them. The is_open method
 	// can be used to check if they are actually open and should be written to.
@@ -264,24 +260,33 @@ int kmeans(Rng &rng, const std::string &inputFile, const std::string &outputFile
 	readData(infile,allData, rows, cols);
 	// TODO: load dataset - Yarne
 
+	// initialize BIG variabels
+	const int numPoints = 500;
+	std::vector<int>* bestClusters{}; 
+	std::vector<int> clusters(numPoints, -1); // [-1, -1, ..., -1] x number of points
+	pointMatrix centroidsMatrix{};
+	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
+	std::vector<size_t> stepsPerRepetition(repetitions); // to save the number of steps each rep needed
+
+	// then start timing! (don't want to also time the creation of our big variables)
 	// This is a basic timer from std::chrono ; feel free to use the appropriate timer for
 	// each of the technologies, e.g. OpenMP has omp_get_wtime()
 	Timer timer;
-
-	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
-	std::vector<size_t> stepsPerRepetition(repetitions); // to save the number of steps each rep needed
 
     // Do the k-means routine a number of times, each time starting from
     // different random centroids (use Rng::pickRandomIndices), and keep 
     // the best result of these repetitions.
 	for (int r = 0 ; r < repetitions ; r++)
 	{
+		initCentroidsMatrix(centroidsMatrix, numClusters, repetitions);
+
 		size_t numSteps = 0;
         // TODO: perform an actual k-means run, starting from random centroids
         //       (see rng.h)
-		std::cerr << "TODO: implement this" << std::endl;
+		//std::cerr << "TODO: implement this" << std::endl;
 
-		kmeansReps(1, 1, 1);
+		kmeansReps(bestDistSquaredSum, bestClusters, centroidsMatrix[r], clusters, numPoints, 2, 1);
+		// TODO: change numPoints & numClusters & num reps from a non hardcoded var!
 
 		stepsPerRepetition[r] = numSteps;
 
