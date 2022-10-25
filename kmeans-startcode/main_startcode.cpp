@@ -35,6 +35,9 @@ struct point
 
 	void add(point &p)
 	{
+		if (datapoints.size() <= 0)
+			datapoints = std::vector<double>(p.getSize(), 0);
+
 		for (size_t i = 0; i < p.getSize(); i++)
 			datapoints[i] += p.getDataPoint(i);
 	}
@@ -233,11 +236,11 @@ void choose_centroids_at_random(const int numClusters, const int numPoints, Rng 
 // int find_closest_centroid_index_and_distance(float &dist, const int p, std::vector<Point>& centroids)
 
 // TODO@yarne: I would remove the -1 special case and just make the distance MAXVALUE
-int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids, const size_t offset)
+int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids, const int numClusters, const size_t offset)
 {
 	point closestCentroid;
 	int indexCentroid;
-	for (size_t c = 0; c < centroids.size(); ++c)
+	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
 		for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
@@ -265,10 +268,9 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 
 point average_of_points_with_cluster(const size_t centroidIndex, const std::vector<int> &clusters, const size_t clusterOffset, std::vector<point> &allPoints)
 {
-	// cluster -> punt -> welke centroid
 	point avgPoint{};
 	size_t numberOfPoints = 0;
-	for (size_t i = 0; i < clusters.size(); i++)
+	for (size_t i = 0; i < allPoints.size(); i++)
 	{
 		if (clusters[clusterOffset + i] == centroidIndex)
 		{
@@ -285,7 +287,7 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
  * 	- use best cluster, smallest integer representative (uchar f.e.) which means there can be max 255 clusters
  */
 int kmeansReps(double &bestDistSquaredSum,
-			   std::vector<int> *bestClusters,
+			   size_t bestClusterOffset,
 			   std::vector<point> &centroids,
 			   size_t centroidOffset,
 			   std::vector<int> &clusters,
@@ -306,7 +308,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		for (int p = 0; p < numPoints; ++p)
 		{
 			float dist{-1};
-			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, centroidOffset);
+			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
 
 			if (newCluster != clusters[clusterOffset + p])
@@ -326,7 +328,7 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		if (distanceSquaredSum < bestDistSquaredSum)
 		{
-			bestClusters = &clusters; // Does this work with pointers?
+			bestClusterOffset = clusterOffset; // Does this work with pointers?
 			bestDistSquaredSum = distanceSquaredSum;
 		}
 	}
@@ -363,7 +365,7 @@ int kmeans(Rng &rng,
 	readData(infile, allPoints, numPoints, dimension);
 
 	// initialize BIG variabels
-	std::vector<int> *bestClusters{}; // TODO@ties: shouldn't be a pointer, should be an offset in vector
+	size_t bestClusterOffset{0}; // TODO@ties: shouldn't be a pointer, should be an offset in vector
 	std::vector<int> clusters ((int)numPoints * repetitions, -1);
 	/**
 	 * with amount of -1 in the matrix = number of points * repetitions
@@ -396,13 +398,10 @@ int kmeans(Rng &rng,
 	{
 		size_t numSteps = 0;
 
-		// TODO: perform an actual k-means run, starting from random centroids
-		//       (see rng.h)
-		// std::cerr << "TODO: implement this" << std::endl;
-
 		// TODO@ties: change numPoints & numClusters & num reps from a non hardcoded var!
-		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusters, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);;
-		std::cout << stepsPerRepetition[r];
+		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);;
+		std::cout << stepsPerRepetition[r] << "\n";
+
 		// Make sure debug logging is only done on first iteration ; subsequent checks
 		// with is_open will indicate that no logging needs to be done anymore.
 		centroidDebugFile.close();
