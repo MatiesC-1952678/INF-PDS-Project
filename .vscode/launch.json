@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Test - 1",
+            "name": "k1 rep1 seed1 500x2",
             "type": "cppdbg",
             "request": "launch",
             //"preLaunchTask": "Make g++-14",
@@ -17,7 +17,22 @@
                 "--repetitions", "1", 
                 "--seed", "1"],
             "cwd": "/home/matiesclaesen/Documents/INF-PDS-Project/kmeans-startcode/",
-            "externalConsole": true,
+            "externalConsole": false,
+         },
+         {
+            "name": "k3 rep5 seed@yarne 500x2",
+            "type": "cppdbg",
+            "request": "launch",
+            //"preLaunchTask": "Make g++-14",
+            "program": "/home/matiesclaesen/Documents/INF-PDS-Project/kmeans-startcode/kmeans",
+            "args": [
+                "--input", "data/mouse_500x2.csv", 
+                "--output", "output/mouse_500x2.o.csv",
+                "--k", "3",
+                "--repetitions", "5", 
+                "--seed", "1952226"],
+            "cwd": "/home/matiesclaesen/Documents/INF-PDS-Project/kmeans-startcode/",
+            "externalConsole": false,
          },
     ]
 }

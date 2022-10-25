@@ -12,7 +12,9 @@ struct point
 {
 	std::vector<double> datapoints;
 
-	point(){};
+	point() {
+		datapoints = std::vector<double>{};
+	};
 
 	~point(){};
 
@@ -44,7 +46,7 @@ struct point
 	}
 };
 
-typedef std::vector<std::vector<point>> PointMatrix;
+// typedef std::vector<std::vector<point>> PointMatrix;
 // TODO@ties: change vector to array for number of centroids, NOT for amount of steps -> cuz these are variable, repetitions are known
 // typedef std::vector<std::vector<int>> IntMatrix;
 
@@ -159,7 +161,7 @@ void readData(std::ifstream &input, std::vector<point> &allData, size_t &numRows
 		line++;
 	}
 
-	numRows = (size_t)allData.size() / numColsExpected;
+	numRows = (size_t)allData.size();
 	numCols = (size_t)numColsExpected;
 }
 
@@ -213,37 +215,38 @@ std::vector<size_t> choose_centroids_at_random(const int k, Rng &rng)
 {
 	std::vector<size_t> centroids(k);
 	rng.pickRandomIndices(k, centroids);
-	std::cout << centroids[2];
 	return centroids;
 }
 
 // TODO@yarne: Pretty sure dat pick random indices niet indices neemt van de totale punt vector ma gewoon random coordinaten maakt voor een nieuw centroid punt
 // DIT MOET GE DUS WSS AANPASSEN
-void choose_centroids_at_random(const int numClusters, const int numPoints, Rng &rng, std::vector<point> &centroids, std::vector<point> &allPoints)
+void choose_centroids_at_random(const int numClusters, const int numPoints, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
 {
-	std::vector<size_t> indices(numClusters);
-	rng.pickRandomIndices(numPoints, indices);
-	for (size_t i = 0; i < numClusters; i++)
-		centroids[i] = allPoints[indices[i]];
+	for(int rep = 0; rep < repetitions; ++rep) {
+		std::vector<size_t> indices(numClusters);
+		rng.pickRandomIndices(numPoints, indices);
+		for (size_t i = 0; i < numClusters; i++)
+			centroids[numClusters*rep + i] = allPoints[indices[i]];
+	}
 }
 
 // int find_closest_centroid_index_and_distance(float &dist, const int p, std::vector<Point>& centroids)
 
 // TODO@yarne: I would remove the -1 special case and just make the distance MAXVALUE
-int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids)
+int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids, const size_t offset)
 {
 	point closestCentroid;
 	int indexCentroid;
-	for (size_t c = 0; c < centroids.size(); c++)
+	for (size_t c = 0; c < centroids.size(); ++c)
 	{
 		double currentdist = 0;
-		for (size_t i = 0; i < p.getSize() - 1; i++) // p.getSize() or dimension
+		for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
 		{
-			currentdist += pow((p.getDataPoint(i) - centroids[c].getDataPoint(i)), 2);
+			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 		}
 		if (dist == -1)
 		{
-			closestCentroid = centroids[c];
+			closestCentroid = centroids[offset + c];
 			dist = currentdist;
 			indexCentroid = c;
 		}
@@ -260,19 +263,16 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 // //float or int???
 // Point average_of_points_with_cluster(const int j)
 
-point average_of_points_with_cluster(const size_t centroidID, const std::vector<int> &clusters, std::vector<point> &allPoints)
+point average_of_points_with_cluster(const size_t centroidIndex, const std::vector<int> &clusters, const size_t clusterOffset, std::vector<point> &allPoints)
 {
 	// cluster -> punt -> welke centroid
-	point avgPoint;
+	point avgPoint{};
 	size_t numberOfPoints = 0;
 	for (size_t i = 0; i < clusters.size(); i++)
 	{
-		if (clusters[i] == centroidID)
+		if (clusters[clusterOffset + i] == centroidIndex)
 		{
-			if (i == 1)
-				avgPoint = allPoints[i];
-			else
-				avgPoint.add(allPoints[i]);
+			avgPoint.add(allPoints[i]);
 			numberOfPoints++;
 		}
 	}
@@ -287,27 +287,31 @@ point average_of_points_with_cluster(const size_t centroidID, const std::vector<
 int kmeansReps(double &bestDistSquaredSum,
 			   std::vector<int> *bestClusters,
 			   std::vector<point> &centroids,
+			   size_t centroidOffset,
 			   std::vector<int> &clusters,
+			   size_t clusterOffset,
 			   std::vector<point> &allPoints,
 			   const size_t numPoints,
 			   const int numClusters			)
 {
 
 	bool changed = true;
+	int steps = 0;
 	while (changed)
 	{
+		steps++;
 		changed = false;
 		float distanceSquaredSum = 0;
 
 		for (int p = 0; p < numPoints; ++p)
 		{
 			float dist{-1};
-			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids);
+			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, centroidOffset);
 			distanceSquaredSum += dist;
 
-			if (newCluster != clusters[p])
+			if (newCluster != clusters[clusterOffset + p])
 			{							  // optim: comparer that's quick?
-				clusters[p] = newCluster; // optim: copy constructor? -> make a move constructor? -> which is faster?
+				clusters[clusterOffset + p] = newCluster; // optim: copy constructor? -> make a move constructor? -> which is faster?
 				changed = true;
 			}
 		}
@@ -316,7 +320,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		{
 			for (int j = 0; j < numClusters; ++j)
 			{
-				centroids[j] = average_of_points_with_cluster(j, clusters, allPoints);
+				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 			}
 		}
 
@@ -326,6 +330,8 @@ int kmeansReps(double &bestDistSquaredSum,
 			bestDistSquaredSum = distanceSquaredSum;
 		}
 	}
+
+	return steps;
 }
 
 int kmeans(Rng &rng,
@@ -367,11 +373,14 @@ int kmeans(Rng &rng,
 	 * and 3 repetitions in total
 	 */
 
-	PointMatrix centroids{repetitions};
-	for (int i = 0; i < repetitions; ++i)
-	{
-		choose_centroids_at_random(numClusters, numPoints, rng, centroids[repetitions], allPoints);
-	}
+	std::vector<point> centroids(numClusters * repetitions);
+	/**
+	 * centroids * repetitions
+	 * abstract example: [p1, p2, p3 | p1, p2, p3]
+	 * here are 3 centroids for 3 repetitions made
+	*/
+	choose_centroids_at_random(numClusters, numPoints, rng, centroids, repetitions, allPoints);
+	
 	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
 
@@ -391,11 +400,9 @@ int kmeans(Rng &rng,
 		//       (see rng.h)
 		// std::cerr << "TODO: implement this" << std::endl;
 
-		kmeansReps(bestDistSquaredSum, bestClusters, centroids[r], clusters, allPoints, numPoints, numClusters);
 		// TODO@ties: change numPoints & numClusters & num reps from a non hardcoded var!
-
-		stepsPerRepetition[r] = numSteps;
-
+		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusters, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);;
+		std::cout << stepsPerRepetition[r];
 		// Make sure debug logging is only done on first iteration ; subsequent checks
 		// with is_open will indicate that no logging needs to be done anymore.
 		centroidDebugFile.close();
