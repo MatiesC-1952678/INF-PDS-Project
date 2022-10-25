@@ -27,13 +27,13 @@ struct pair
 	void decrement(point& otherP) {
 		if (amount >= 1) {
 			amount--;
-			p.add(otherP);
+			p.del(otherP);
 		}
 	}
 
 	point calcAvg() {
-		p.divide(amount);
-		return p;
+		point result = p.divideTo(amount);
+		return result;
 	}
 };
 
@@ -280,10 +280,14 @@ int kmeansReps(double &bestDistSquaredSum,
 
 	bool changed = true;
 	int steps = 0;
-	std::map<int, pair> distanceDict{}; //TODO@ties: optim -> move this one out of calc and to overhead (with clusters & centroids vectors init!)
-	for(int i = 0; i < numClusters; ++i)
-		distanceDict.insert(std::pair<int, pair>(i, pair()));
+
+	std::map<int, pair> distanceDict; //TODO@ties: optim -> move this one out of calc and to overhead (with clusters & centroids vectors init!)
 	std::vector<point> previousCentroids{};
+	for(int i = 0; i < numClusters; ++i) {
+		distanceDict.insert(std::pair<int, pair>(i, pair()));
+		previousCentroids.push_back(point());
+	}
+
 	while (changed)
 	{
 		steps++;
@@ -295,23 +299,28 @@ int kmeansReps(double &bestDistSquaredSum,
 			float dist = std::numeric_limits<float>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
-			if (newCluster != clusters[clusterOffset + p])
+			int oldCluster = clusters[clusterOffset + p];
+			point currentPoint = allPoints[p];
+			if (newCluster != oldCluster)
 			{
 				//decrement previous centroid
-				point currentPoint = allPoints[p];
-				distanceDict.at(clusters[clusterOffset + p]).decrement(currentPoint);
+				if (oldCluster >= 0) {
+					distanceDict.at(oldCluster).decrement(currentPoint);
+				}
 				//increment current centroid
 				distanceDict.at(newCluster).increment(currentPoint);
 
 				clusters[clusterOffset + p] = newCluster;
 				changed = true;
-			}
+			} 
 		}
+
+		//std::cout << distanceDict.at(0).p.getDataPoint(0) << std::endl;
 
 		if (changed)
 		{
 			for (int j = 0; j < numClusters; ++j) {
-				previousCentroids[j] = centroids[centroidOffset + j];
+				previousCentroids[j] = centroids[centroidOffset + j]; //TODO@ties: move constructor?
 				//centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 				pair current = distanceDict.at(j);
 				centroids[centroidOffset + j] = current.calcAvg();
@@ -392,6 +401,8 @@ int kmeans(Rng &rng,
 		size_t numSteps = 0;
 
 		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);
+
+		std::cout << stepsPerRepetition[r] << std::endl;
 
 		// Make sure debug logging is only done on first iteration ; subsequent checks
 		// with is_open will indicate that no logging needs to be done anymore.

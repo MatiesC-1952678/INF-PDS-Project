@@ -37,9 +37,26 @@ struct point
 			datapoints[i] += p.getDataPoint(i);
 	}
 
+    void del(point &p)
+    {
+        if (datapoints.size() <= 0)
+			datapoints = std::vector<double>(p.getSize(), 0);
+
+        for (size_t i = 0; i < p.getSize(); i++)
+			datapoints[i] -= p.getDataPoint(i);
+    }
+
 	void divide(const size_t divider)
 	{
 		for (size_t i = 0; i < datapoints.size(); i++)
 			datapoints[i] /= divider;
 	}
+
+    point divideTo(const size_t divider)
+    {
+		point result{};
+        for (size_t i = 0; i < datapoints.size(); i++)
+			result.addDataPoint(datapoints[i] / divider);
+		return result;
+    }
 };
