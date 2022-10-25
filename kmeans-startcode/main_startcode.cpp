@@ -217,9 +217,18 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 	return avgPoint;
 }
 
-/**
- * possible optimizations:
- * 	- use best cluster
+/*
+	Does a kmeans run
+	@param bestDistSquaredSum: the best distance
+	@param bestClusterOffset: the offset of the best cluster
+	@param centroids: a vector of random points from the input file
+	@param centroidOffset: the offset of the current centroids in this rep
+	@param clusters: vector with the closest centroid per point
+	@param clusterOffset: the offset of the current cluster in this rep
+	@param allPoints: all the points from the input file
+	@param numPoints: the total number of points
+	@param numClusters: number of centroids needed
+	@return the amount of steps this run took to complete
  */
 int kmeansReps(double &bestDistSquaredSum,
 			   size_t &bestClusterOffset,
