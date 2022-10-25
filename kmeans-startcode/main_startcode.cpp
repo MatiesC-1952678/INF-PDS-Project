@@ -213,8 +213,9 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 			numberOfPoints++;
 		}
 	}
-	std::cout << avgPoint.getDataPoint(0) << std::endl;
-	// 34.6097
+
+	//std::cout << avgPoint.getDataPoint(0) << std::endl;
+
 	avgPoint.divide(numberOfPoints);
 	return avgPoint;
 }
