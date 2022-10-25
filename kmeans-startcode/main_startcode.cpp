@@ -2,11 +2,40 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
+#include <map>
 #include "CSVReader.hpp"
 #include "CSVWriter.hpp"
 #include "rng.h"
 #include "timer.h"
 #include "structs.h"
+
+struct pair 
+{
+	point p;
+	int amount = 0;
+
+	pair() {
+		p = point{};
+	};
+	~pair() {};
+
+	void increment(point& otherP) {
+		amount++;
+		p.add(otherP);
+	}
+	
+	void decrement(point& otherP) {
+		if (amount >= 1) {
+			amount--;
+			p.add(otherP);
+		}
+	}
+
+	point calcAvg() {
+		p.divide(amount);
+		return p;
+	}
+};
 
 void usage()
 {
@@ -156,6 +185,14 @@ void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<poi
 	}
 }
 
+double calcDistance(point& p, point &centroid) 
+{
+	double currentDist = 0;
+	for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
+		currentDist += pow((p.getDataPoint(i) - centroid.getDataPoint(i)), 2);
+	return currentDist;
+}
+
 /*
 	Find the closest centroids index and distance for a given point
 	@param numClusters: number of centroids needed
@@ -172,11 +209,11 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 	int indexCentroid;
 	for (size_t c = 0; c < numClusters; ++c)
 	{
-		double currentdist = 0;
+		double currentdist = calcDistance(p, centroids[offset + c]);
 
-		for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
-			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
-
+		// for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
+		// 	currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
+		
 		if (dist == std::numeric_limits<double>::max())
 		{
 			closestCentroid = centroids[offset + c];
@@ -243,6 +280,10 @@ int kmeansReps(double &bestDistSquaredSum,
 
 	bool changed = true;
 	int steps = 0;
+	std::map<int, pair> distanceDict{}; //TODO@ties: optim -> move this one out of calc and to overhead (with clusters & centroids vectors init!)
+	for(int i = 0; i < numClusters; ++i)
+		distanceDict.insert(std::pair<int, pair>(i, pair()));
+	std::vector<point> previousCentroids{};
 	while (changed)
 	{
 		steps++;
@@ -254,9 +295,14 @@ int kmeansReps(double &bestDistSquaredSum,
 			float dist = std::numeric_limits<float>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
-
 			if (newCluster != clusters[clusterOffset + p])
 			{
+				//decrement previous centroid
+				point currentPoint = allPoints[p];
+				distanceDict.at(clusters[clusterOffset + p]).decrement(currentPoint);
+				//increment current centroid
+				distanceDict.at(newCluster).increment(currentPoint);
+
 				clusters[clusterOffset + p] = newCluster;
 				changed = true;
 			}
@@ -264,8 +310,12 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		if (changed)
 		{
-			for (int j = 0; j < numClusters; ++j)
-				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
+			for (int j = 0; j < numClusters; ++j) {
+				previousCentroids[j] = centroids[centroidOffset + j];
+				//centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
+				pair current = distanceDict.at(j);
+				centroids[centroidOffset + j] = current.calcAvg();
+			}
 		}
 
 		if (distanceSquaredSum < bestDistSquaredSum)
