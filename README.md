@@ -31,7 +31,7 @@ Andere optimalisaties die we in deze stap hebben toegevoegd zijn:
 * zo weinig mogelijk:
   * copy / move constructors
 * kleinere bare bones structs die data managen
-* gebruik maken offsets in de vectors om het toekomstig parallelliseren makkelijker te maken
+* gebruik maken van offsets in de vectors om het toekomstig parallelliseren makkelijker te maken
 
 Daarbij hebben we ook enkele toevoegingen gemaakt zoals:
 * duidelijke comments
