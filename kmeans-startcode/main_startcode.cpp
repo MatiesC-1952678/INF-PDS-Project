@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "structs.h"
 
+
 void usage()
 {
 	std::cerr << R"XYZ(

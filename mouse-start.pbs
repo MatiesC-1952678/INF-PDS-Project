@@ -1,0 +1,21 @@
+#!/bin/bash -l
+#PBS -l nodes=1:ppn=36
+#PBS -l walltime=0:03:00
+#PBS -A llp_h_pds
+#no debug
+module load GCC/8.3.0
+module list
+
+cd $PBS_O_WORKDIR
+
+o="kmeans-startcode/kmeans"
+
+vscFlags=" --input mouse_500x2.csv --output output.csv --repetitions 10 --k 3 --centroidtrace centroidtrace.csv --trace clustertrace.csv --seed 1338"
+
+/data/leuven/303/vsc30380/kmeans_serial_reference --input mouse_500x2.csv --output ref-output.csv --repetitions 10 --k 3 --centroidtrace ref-centroidtrace.csv --trace ref-clustertrace.csv --seed 1338
+
+$o $vscFlags
+
+#solution="/data/leuven/303/vsc30380/kmeans_serial_reference --input mouse_500x2.csv --output sol-mouse-output.csv --repetitions 10 --k 3 --seed 1952226 --"
+
+#$solution
