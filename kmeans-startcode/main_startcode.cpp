@@ -32,8 +32,7 @@ struct pair
 	}
 
 	point calcAvg() {
-		point result = p.divideTo(amount);
-		return result;
+		return p.divideTo(amount);
 	}
 };
 
@@ -210,10 +209,10 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 	int indexCentroid;
 	for (size_t c = 0; c < numClusters; ++c)
 	{
-		double currentdist = calcDistance(p, centroids[offset + c]);
-
-		// for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
-		// 	currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
+		//double currentdist = calcDistance(p, centroids[offset + c]);
+		double currentdist = 0;
+		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
+			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 		
 		if (dist == std::numeric_limits<double>::max())
 		{
@@ -354,16 +353,6 @@ int kmeansReps(double &bestDistSquaredSum,
 			} 
 		}
 		//std::cout << distanceDict.at(0).p.getDataPoint(0) << std::endl;
-
-		if (changed)
-		{
-			for (int j = 0; j < numClusters; ++j) {
-				//previousCentroids[j] = centroids[centroidOffset + j]; //TODO@ties: move constructor?
-				//centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
-				pair current = distanceDict.at(j);
-				centroids[centroidOffset + j] = current.calcAvg();
-			}
-		}
 		
 		if(debugClusters)
 			debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);	
@@ -373,6 +362,16 @@ int kmeansReps(double &bestDistSquaredSum,
 					for (size_t i = 0; i < allPoints[0].getSize(); ++i)
 						debugCentroid.push_back(centroids[j].getDataPoint(i));
 				}
+			}
+		}
+
+		if (changed)
+		{
+			for (int j = 0; j < numClusters; ++j) {
+				//previousCentroids[j] = centroids[centroidOffset + j]; //TODO@ties: move constructor?
+				//centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
+				pair current = distanceDict.at(j);
+				centroids[centroidOffset + j] = current.calcAvg();
 			}
 		}
 

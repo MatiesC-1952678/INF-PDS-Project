@@ -52,7 +52,7 @@ struct point
 			datapoints[i] /= divider;
 	}
 
-    point divideTo(const size_t divider)
+    point divideTo( const size_t divider)
     {
 		point result{};
         for (size_t i = 0; i < datapoints.size(); i++)
