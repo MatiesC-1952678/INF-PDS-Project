@@ -277,6 +277,7 @@ int kmeansReps(double &bestDistSquaredSum,
 			   std::string &clustersDebugFile			)
 {
 
+	
 	bool changed = true;
 	int steps = 0;
 	std::vector<double> debugCluster{};
