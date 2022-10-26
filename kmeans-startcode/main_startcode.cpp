@@ -402,7 +402,7 @@ int kmeans(Rng &rng,
 
 		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);
 
-		std::cout << stepsPerRepetition[r] << std::endl;
+		//std::cout << stepsPerRepetition[r] << std::endl;
 
 		// Make sure debug logging is only done on first iteration ; subsequent checks
 		// with is_open will indicate that no logging needs to be done anymore.
