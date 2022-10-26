@@ -29,11 +29,7 @@
                 "--input", "data/mouse_500x2.csv", 
                 "--output", "output/mouse_500x2.o.csv",
                 "--k", "3",
-<<<<<<< Updated upstream
-                "--repetitions", "10", 
-=======
                 "--repetitions", "10",
->>>>>>> Stashed changes
                 "--centroidtrace", "ctrace.csv",
                 "--trace", "trace.csv", 
                 "--seed", "1338"],
