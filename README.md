@@ -150,6 +150,7 @@ Enkel wanneer er dan een punt zich verplaats van cluster zal er een herberekenin
 Bij het berekenen van het gemiddelde wordt enkel amount gebruikt en de coordinaten opgeslaan in totalP om zo `distanceDict.at(j).totalP / distanceDict.at(j).amount` het gemiddelde te berekenen.
 
 **3.2.3 Efficiëntie**
+
 Dit "Greedy" algoritme is qua uitvoeringstijd trager dan de niet-greedy versie. Wij denken dat dit komt door de dict datastructuur waarbij er veel meer gebruikt wordt gemaakt van dynamisch geheugen en shared resource, dan in de seriële versie van het algoritme. Deze dict moet vaak worden aangepast of items uit worden opgeroepen.
 
 
