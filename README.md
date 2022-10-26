@@ -27,25 +27,32 @@ Andere optimalisaties die we in deze stap hebben toegevoegd zijn:
 * zo veel mogelijk:
   * references
   * consts
+  * letten op geheugengebruik van datastructuren
 * zo weinig mogelijk:
   * copy / move constructors
 * kleinere bare bones structs die data managen
+* gebruik maken offsets in de vectors om het toekomstig parallelliseren makkelijker te maken
 
 Daarbij hebben we ook enkele toevoegingen gemaakt zoals:
 * duidelijke comments
 * gebruik van launch.json en tasks.json in VSCode
 
-*2.1. Mappenstructuur**
+Mogelijke optimalisaties die nog konden gebeuren:
+* Arrays gebruiken met vaste groottes i.p.v. dynamisch gealloceerde vectors, wat tijd kost
+* Verbeterde for loops
+* C++ datastructuren gebruiken i.p.v. zelf gemaakte
+
+**2.1. Mappenstructuur**
 
 De verschillende pbs als uitvoer files staan in de map "FinalKmeans", deze werden uitgevoerd op het VSC met de finale code. De mappen "Output-and-error_debugging", "Csv-output_debugging" werden gebruikt tijdens het debuggen, hierin staan output files van mislukte pogingen.
 In de map "Correct_debugging" staan de output files van de eerste werkende versie tijdens het debuggen.
-"Greedy versie" en "Finale versie" bevatten de code voor beide versies van algoritmen.
+"Greedy versie" en "Finale versie" bevatten de code van beide versies van algoritmen.
 
 **3. Een GREEDY algoritme**
 
 Nadat we dit gedeelte werkende hadden bij ons programma hadden we besloten om eens te kijken in een abstracte vorm naar de mogelijke faalpunten van dit serieel programma. 
 
-in de psuedo code zien we dus als volgt:
+In de psuedo code zien we dus als volgt:
 ``` python =
 ...
 
@@ -75,7 +82,7 @@ in de psuedo code zien we dus als volgt:
 
 We zien natuurlijk een probleem bij deze code wat waarschijnlijk een grote impact gaat hebben op de uitvoertijd. We lopen **twee keer** over de gehele range van punten. Wanneer we dan N punten hebben, hebben we tenminste 2*N nodig om dit programma uit te voeren. Dit is te zien op lijn 2 en lijn 7 waarbij elk `for p in range(numberOfPoints):` staat. Deze afschatting neemt dan ook nog niet in acht dat we bij lijn 16 `for j in range(k):` dit voor elke centroid moeten berekenen. Hierdoor zouden we dus bij de functie `average_of_points_with_cluster` meermaals over **alle** punten moeten lopen gewoon om het nieuwe gemiddelde te berekenen.
 
-Om dit probleem op te lossen hadden we dus besloten om een extra serieële versie te maken die de pseudocode achterwege laat en dit probleem probeert op te lossen. 
+Om dit probleem op te lossen hadden we dus besloten om een extra seriële versie te maken die de pseudocode achterwege laat en dit probleem probeert op te lossen. 
 
 **3.1. Een ordening invoegen**
 
@@ -141,3 +148,8 @@ Het interessante is natuurlijk de tweede stap namelijk wanneer er een punt migre
 Enkel wanneer er dan een punt zich verplaats van cluster zal er een herberekening worden gedaan binnen de dict. Dit wil zeggen dat deze dict tijdens de gehele repetitions zal worden doorgegeven en aangepast als een shared resource. Dit zou in een parallel programma wel veel meer dependencies toevoegen waardoor we deze implementatie niet hebben gemerged met onze actuele implementatie. Toch kunnen we deze versie wel sterk gebruiken als competitie voor onze toekomstige code. 
 
 Bij het berekenen van het gemiddelde wordt enkel amount gebruikt en de coordinaten opgeslaan in totalP om zo `distanceDict.at(j).totalP / distanceDict.at(j).amount` het gemiddelde te berekenen.
+
+**3.2.3 Efficiëntie**
+Dit "Greedy" algoritme is qua uitvoeringstijd trager dan de niet-greedy versie. Wij denken dat dit komt door de dict datastructuur waarbij er veel meer gebruikt wordt gemaakt van dynamisch geheugen en shared resource, dan in de seriële versie van het algoritme. Deze dict moet vaak worden aangepast of items uit worden opgeroepen.
+
+
