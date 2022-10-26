@@ -4,10 +4,10 @@
 # -O3: enables optimizations in the compiler
 
 # Settings for optimized build
-FLAGS=-O3 -DNDEBUG #-std=c++14
+#FLAGS=-O3 -DNDEBUG #-std=c++14
 
 # Settings for a debug build
-#FLAGS=-g -std=c++14
+FLAGS=-g -std=c++14
 
 all: kmeans
 
