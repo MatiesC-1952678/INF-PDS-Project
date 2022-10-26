@@ -44,9 +44,11 @@ Mogelijke optimalisaties die nog konden gebeuren:
 
 **2.1. Mappenstructuur**
 
-De verschillende pbs als uitvoer files staan in de map "FinalKmeans", deze werden uitgevoerd op het VSC met de finale code. De mappen "Output-and-error_debugging", "Csv-output_debugging" werden gebruikt tijdens het debuggen, hierin staan output files van mislukte pogingen.
+De verschillende gebruikte pbs als uitvoer files staan in de map "FinalKmeans", deze werden uitgevoerd op het VSC met de finale code. De mappen "Output-and-error_debugging", "Csv-output_debugging" werden gebruikt tijdens het debuggen, hierin staan output files van mislukte pogingen.
 In de map "Correct_debugging" staan de output files van de eerste werkende versie tijdens het debuggen.
 "Greedy versie" en "Finale versie" bevatten de code van beide versies van algoritmen.
+
+In de map "FinalKmeans" -> "outputfiles" staat MAIN voor de verwerking van de input file door onze code, REF voor de verwerking door de referentie implementatie en SORT voor de verwerking door het GREEDY algoritme.
 
 **3. Een GREEDY algoritme**
 
