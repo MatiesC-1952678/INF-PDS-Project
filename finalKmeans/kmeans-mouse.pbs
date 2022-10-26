@@ -1,0 +1,18 @@
+#!/bin/bash -l
+#PBS -l nodes=1:ppn=36
+#PBS -l walltime=0:10:00
+#PBS -A llp_h_pds
+#no debug
+module load GCC/8.3.0
+module list
+
+cd $PBS_O_WORKDIR
+
+inputDir="input/mouse_500x2.csv"
+#read "$inputDir"
+
+./kmeansSORT --input $inputDir  --output SORT.csv --repetitions 10 --k 3 --centroidtrace SORTcen.csv --trace SORTclus.csv --seed 1952226
+
+./kmeansMAIN --input $inputDir  --output MAIN.csv --repetitions 10 --k 3 --centroidtrace MAINcen.csv --trace MAINclus.csv --seed 1952226
+
+/data/leuven/303/vsc30380/kmeans_serial_reference --input $inputDir --output REF.csv --repetitions 10 --k 3 --centroidtrace REFcen.csv --trace REFclus.csv --seed 1952226

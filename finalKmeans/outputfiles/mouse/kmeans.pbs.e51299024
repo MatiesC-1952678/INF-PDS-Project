@@ -1,0 +1,12 @@
+
+Currently Loaded Modules:
+  1) GCCcore/8.3.0               3) binutils/2.32-GCCcore-8.3.0
+  2) zlib/1.2.11-GCCcore-8.3.0   4) GCC/8.3.0
+
+ 
+
+# Type,blocks,threads,file,seed,clusters,repetitions,bestdistsquared,timeinseconds
+# Type,blocks,threads,file,seed,clusters,repetitions,bestdistsquared,timeinseconds
+# Loaded 500x2 matrix
+# New best on repetition 0: 8.11316 (difference is 1.79769e+308)
+# Type,blocks,threads,file,seed,clusters,repetitions,bestdistsquared,timeinseconds
