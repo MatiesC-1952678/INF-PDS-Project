@@ -152,6 +152,7 @@ void readData(std::ifstream &input, std::vector<point> &allData, size_t &numRows
 	numCols = (size_t)numColsExpected;
 }
 
+// Helper function to open debug file
 FileCSVWriter openDebugFile(const std::string &n)
 {
 	FileCSVWriter f;
@@ -250,8 +251,35 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 			numberOfPoints++;
 		}
 	}
+
+	//std::cout << avgPoint.getDataPoint(0) << std::endl;
+
 	avgPoint.divide(numberOfPoints);
 	return avgPoint;
+}
+
+/*
+	Writes the clusters to the debug file
+	@param numpoints: total number of points
+	@param cluster: vector with the closest centroid per point
+	@param clusterDebugFileName: the file name of the debug file
+*/
+void writeClusterToDebugFile(std::vector<double> &cluster, std::string &clusterDebugFileName, const int numpoints){
+	FileCSVWriter clustersDebugFile = openDebugFile(clusterDebugFileName);
+	clustersDebugFile.write(cluster, numpoints);
+	clustersDebugFile.close();
+}
+
+/*
+	Writes the centroids to the debug file
+	@param dimension: dimenion of the points
+	@param centroid: vector with the closest centroid per point
+	@param centroidDebugFileName: the file name of the debug file
+*/
+void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centroidDebugFileName, const int dimension){
+	FileCSVWriter centroidDebugFile = openDebugFile(centroidDebugFileName);
+	centroidDebugFile.write(centroid, dimension);
+	centroidDebugFile.close();
 }
 
 /*
@@ -265,6 +293,10 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 	@param allPoints: all the points from the input file
 	@param numPoints: the total number of points
 	@param numClusters: number of centroids needed
+	@param debugCentroids: centroidtrace flag is set
+	@param debugClusters: trace flag is set
+	@param centroidDebugFile: centroids debug file
+	@param clustersDebugFile: clusters debug file
 	@return the amount of steps this run took to complete
  */
 int kmeansReps(double &bestDistSquaredSum,
@@ -275,9 +307,14 @@ int kmeansReps(double &bestDistSquaredSum,
 			   size_t clusterOffset,
 			   std::vector<point> &allPoints,
 			   const size_t numPoints,
-			   const int numClusters			)
+			   const int numClusters,
+			   bool debugCentroids,
+			   bool debugClusters,
+			   std::string &centroidDebugFile,
+			   std::string &clustersDebugFile			)
 {
 
+	
 	bool changed = true;
 	int steps = 0;
 
@@ -288,6 +325,8 @@ int kmeansReps(double &bestDistSquaredSum,
 		//previousCentroids.push_back(point());
 	}
 
+	std::vector<double> debugCluster{};
+	std::vector<double> debugCentroid{};
 	while (changed)
 	{
 		steps++;
@@ -314,7 +353,6 @@ int kmeansReps(double &bestDistSquaredSum,
 				changed = true;
 			} 
 		}
-
 		//std::cout << distanceDict.at(0).p.getDataPoint(0) << std::endl;
 
 		if (changed)
@@ -326,13 +364,31 @@ int kmeansReps(double &bestDistSquaredSum,
 				centroids[centroidOffset + j] = current.calcAvg();
 			}
 		}
+		
+		if(debugClusters)
+			debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);	
+		if(debugCentroids){
+			for (size_t j = 0; j < numClusters; ++j){
+				if(debugCentroids){
+					for (size_t i = 0; i < allPoints[0].getSize(); ++i)
+						debugCentroid.push_back(centroids[j].getDataPoint(i));
+				}
+			}
+		}
 
+		
 		if (distanceSquaredSum < bestDistSquaredSum)
 		{
 			bestClusterOffset = clusterOffset;
 			bestDistSquaredSum = distanceSquaredSum;
 		}
+
 	}
+
+	if(debugClusters)
+		writeClusterToDebugFile(debugCluster, clustersDebugFile, numPoints);
+	if(debugCentroids)
+		writeCentroidToDebugFile(debugCentroid, centroidDebugFile, allPoints[0].getSize());
 
 	return steps;
 }
@@ -344,13 +400,9 @@ int kmeans(Rng &rng,
 		   int repetitions,
 		   int numBlocks,
 		   int numThreads,
-		   const std::string &centroidDebugFileName,
-		   const std::string &clusterDebugFileName)
+		   std::string &centroidDebugFileName,
+		   std::string &clusterDebugFileName)
 {
-	// If debug filenames are specified, this opens them. The is_open method
-	// can be used to check if they are actually open and should be written to.
-	FileCSVWriter centroidDebugFile = openDebugFile(centroidDebugFileName);
-	FileCSVWriter clustersDebugFile = openDebugFile(clusterDebugFileName);
 
 	FileCSVWriter csvOutputFile(outputFileName);
 	if (!csvOutputFile.is_open())
@@ -364,6 +416,11 @@ int kmeans(Rng &rng,
 	std::vector<point> allPoints{};
 	std::ifstream infile(inputFile);
 	readData(infile, allPoints, numPoints, dimension);
+
+	// THEN start timing! (don't want to also time the creation of our big variables, make it upfront and CONSTANT overhead)
+	// This is a basic timer from std::chrono ; feel free to use the appropriate timer for
+	// each of the technologies, e.g. OpenMP has omp_get_wtime()
+	Timer timer;
 
 	// initialize BIG variabels
 	size_t bestClusterOffset{0};
@@ -388,11 +445,6 @@ int kmeans(Rng &rng,
 	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
 
-	// THEN start timing! (don't want to also time the creation of our big variables, make it upfront and CONSTANT overhead)
-	// This is a basic timer from std::chrono ; feel free to use the appropriate timer for
-	// each of the technologies, e.g. OpenMP has omp_get_wtime()
-	Timer timer;
-
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
@@ -400,14 +452,20 @@ int kmeans(Rng &rng,
 	{
 		size_t numSteps = 0;
 
-		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);
+		
 		
 		//std::cout << stepsPerRepetition[r] << std::endl;
 
 		// Make sure debug logging is only done on first iteration ; subsequent checks
 		// with is_open will indicate that no logging needs to be done anymore.
-		centroidDebugFile.close();
-		clustersDebugFile.close();
+		if(centroidDebugFileName.length() > 0 && r==0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
+		else if(clusterDebugFileName.length() > 0 && r==0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, true, centroidDebugFileName, clusterDebugFileName);
+		else if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
+		else
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName);
 	}
 
 	timer.stop();

@@ -1,0 +1,60 @@
+time: 180
+nodes: 1
+procs: 36
+account string: llp_h_pds
+queue: q1h
+========================================================================
+========================================================================
+Epilogue args:
+Date: Wed Oct 26 12:40:45 CEST 2022
+Allocated nodes:
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+r25i27n09
+Job ID: 51298556.tier2-p-moab-2.tier2.hpc.kuleuven.be
+User ID: vsc34998
+Group ID: vsc34998
+Job Name: mouse-start.pbs
+Session ID: 32730
+Resource List: nodes=1:ppn=36,walltime=00:03:00,neednodes=1:ppn=36,pmem=5gb
+Resources Used: cput=00:00:02,vmem=0kb,walltime=00:00:09,mem=0kb,energy_used=0
+Queue Name: q1h
+Account String: llp_h_pds
+-------------------------------------------------------------------------
+time: 9
+nodes: 1
+procs: 36
+account: llp_h_pds

@@ -1,0 +1,61 @@
+time: 180
+nodes: 1
+procs: 36
+account string: llp_h_pds
+queue: q1h
+========================================================================
+sequential,1,1,3M_3000000x6.csv,1952226,3,10,1.01108e+14,10.6346
+========================================================================
+Epilogue args:
+Date: Wed Oct 26 11:15:48 CEST 2022
+Allocated nodes:
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+r26i13n13
+Job ID: 51298399.tier2-p-moab-2.tier2.hpc.kuleuven.be
+User ID: vsc34998
+Group ID: vsc34998
+Job Name: start.pbs
+Session ID: 7517
+Resource List: nodes=1:ppn=36,walltime=00:03:00,neednodes=1:ppn=36,pmem=5gb
+Resources Used: cput=00:00:16,vmem=726528kb,walltime=00:00:23,mem=451968kb,energy_used=0
+Queue Name: q1h
+Account String: llp_h_pds
+-------------------------------------------------------------------------
+time: 23
+nodes: 1
+procs: 36
+account: llp_h_pds

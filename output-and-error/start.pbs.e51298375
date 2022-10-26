@@ -1,0 +1,10 @@
+
+Currently Loaded Modules:
+  1) GCCcore/8.3.0               3) binutils/2.32-GCCcore-8.3.0
+  2) zlib/1.2.11-GCCcore-8.3.0   4) GCC/8.3.0
+
+ 
+
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  Input file is not open
+/var/spool/torque/mom_priv/jobs/51298375.tier2-p-moab-2.tier2.hpc.kuleuven.be.SC: line 15: 17484 Aborted                 (core dumped) $o $vscFlags
