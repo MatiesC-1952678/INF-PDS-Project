@@ -401,6 +401,7 @@ int kmeans(Rng &rng,
 		size_t numSteps = 0;
 
 		stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters);
+		
 		//std::cout << stepsPerRepetition[r] << std::endl;
 
 		// Make sure debug logging is only done on first iteration ; subsequent checks
