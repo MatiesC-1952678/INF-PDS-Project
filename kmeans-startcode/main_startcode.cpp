@@ -410,7 +410,7 @@ int kmeans(Rng &rng,
 		std::cerr << "Unable to open output file " << outputFileName << std::endl;
 		return -1;
 	}
-
+	
 	static size_t numPoints = 0; // Will reset in the readData function anyways = rows
 	static size_t dimension = 0; // Will reset in the readData function anyways = cols
 	std::vector<point> allPoints{};
