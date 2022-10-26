@@ -309,6 +309,11 @@ int kmeans(Rng &rng,
 	std::ifstream infile(inputFile);
 	readData(infile, allPoints, numPoints, dimension);
 
+	// THEN start timing! (don't want to also time the creation of our big variables, make it upfront and CONSTANT overhead)
+	// This is a basic timer from std::chrono ; feel free to use the appropriate timer for
+	// each of the technologies, e.g. OpenMP has omp_get_wtime()
+	Timer timer;
+
 	// initialize BIG variabels
 	size_t bestClusterOffset{0};
 	std::vector<int> clusters ((int)numPoints * repetitions, -1);
@@ -331,11 +336,6 @@ int kmeans(Rng &rng,
 	
 	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
-
-	// THEN start timing! (don't want to also time the creation of our big variables, make it upfront and CONSTANT overhead)
-	// This is a basic timer from std::chrono ; feel free to use the appropriate timer for
-	// each of the technologies, e.g. OpenMP has omp_get_wtime()
-	Timer timer;
 
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
