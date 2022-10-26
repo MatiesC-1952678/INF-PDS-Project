@@ -317,7 +317,7 @@ int kmeansReps(double &bestDistSquaredSum,
 	bool changed = true;
 	int steps = 0;
 
-	std::map<int, pair> distanceDict; //TODO@ties: optim -> move this one out of calc and to overhead (with clusters & centroids vectors init!)
+	std::map<int, pair> distanceDict;
 	//std::vector<point> previousCentroids{};
 	for(int i = 0; i < numClusters; ++i) {
 		distanceDict.insert(std::pair<int, pair>(i, pair()));
@@ -457,12 +457,12 @@ int kmeans(Rng &rng,
 
 		// Make sure debug logging is only done on first iteration ; subsequent checks
 		// with is_open will indicate that no logging needs to be done anymore.
-		if(centroidDebugFileName.length() > 0 && r==0)
+		if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
+		else if(centroidDebugFileName.length() > 0 && r==0)
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
 		else if(clusterDebugFileName.length() > 0 && r==0)
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, true, centroidDebugFileName, clusterDebugFileName);
-		else if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
 		else
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName);
 	}
