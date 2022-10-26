@@ -10,12 +10,11 @@ cd $PBS_O_WORKDIR
 
 o="kmeans-startcode/kmeans"
 
-vscFlags=" --input mouse_500x2.csv --output output.csv --repetitions 10 --k 3 --centroidtrace centroidtrace.csv --trace clustertrace.csv --seed 1338"
+vscFlags=" --input mouse_500x2.csv --output output.csv --repetitions 10 --k 3 --centroidtrace centroidtrace.csv --trace clustertrace.csv --seed 1952226"
 
-/data/leuven/303/vsc30380/kmeans_serial_reference --input mouse_500x2.csv --output ref-output.csv --repetitions 10 --k 3 --centroidtrace ref-centroidtrace.csv --trace ref-clustertrace.csv --seed 1338
+/data/leuven/303/vsc30380/kmeans_serial_reference --input mouse_500x2.csv --output ref-output.csv --repetitions 10 --k 3 --centroidtrace ref-centroidtrace.csv --trace ref-clustertrace.csv --seed 1952226
 
 $o $vscFlags
 
 #solution="/data/leuven/303/vsc30380/kmeans_serial_reference --input mouse_500x2.csv --output sol-mouse-output.csv --repetitions 10 --k 3 --seed 1952226 --"
-
 #$solution
