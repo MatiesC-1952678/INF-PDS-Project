@@ -2,7 +2,7 @@
 
 ##**1. Een versie die werkt**
 
-Natuurlijk begin je altijd met het schrijven van een serieele versie die werkt. Hierbij hebben we ons sterk gebasseerd op de pseudo code die werd gegeven in de assignment. Hierbij valt natuurlijk niet veel te vermelden buiten het feit dat we dezelfde output krijgen als de referentie executable file geplaatst op het VSC.
+Natuurlijk begin je altijd met het schrijven van een seriële versie die werkt. Hierbij hebben we ons sterk gebasseerd op de pseudo code die werd gegeven in de assignment. Hierbij valt natuurlijk niet veel te vermelden buiten het feit dat we dezelfde output krijgen als de referentie executable file geplaatst op het VSC.
 
 Onze implementatie:
 ```
@@ -68,7 +68,7 @@ in de psuedo code zien we dus als volgt:
 
 We zien natuurlijk een probleem bij deze code wat waarschijnlijk een grote impact gaat hebben op de uitvoertijd. We lopen **twee keer** over de gehele range van punten. Wanneer we dan N punten hebben, hebben we tenminste 2*N nodig om dit programma uit te voeren. Dit is te zien op lijn 2 en lijn 7 waarbij elk `for p in range(numberOfPoints):` staat. Deze afschatting neemt dan ook nog niet in acht dat we bij lijn 16 `for j in range(k):` dit voor elke centroid moeten berekenen. Hierdoor zouden we dus bij de functie `average_of_points_with_cluster` meermaals over **alle** punten moeten lopen gewoon om het nieuwe gemiddelde te berekenen.
 
-Om dit probleem op te lossen hadden we dus besloten om een extra serieele versie te maken die de pseudocode achterwege laat en dit probleem probeert op te lossen. 
+Om dit probleem op te lossen hadden we dus besloten om een extra serieële versie te maken die de pseudocode achterwege laat en dit probleem probeert op te lossen. 
 
 ###**1.1. Een ordening invoegen**
 was de lijst van clusters berekent op lijn 12, te ordenen. Hierbij zouden we een soort van insertion sort gebruiken die ervoor zorgt dat we bij lijn 2 niet meer door de gehele lijst van punten moeten lopen maar enkel door het subdeel dat behoort tot deze cluster. Hierdoor zouden we niet meer voor elke centroid door de gehele lijst moeten lopen maar enkele door elk punt nogmaals 1 keer. Deze oplossing leek ons nochtans tegenstrijdig met de huidige immplementatie aangezien we dan een andere manier moesten vinden om de clusters te linken aan de punten (doordat deze nu niet meer op de geassocieerde index staan). Hierbij zou dan ook het probleem zijn dat we weeral een grote lijst aan data moeten bijhouden tijdens het berekenen van ons programma. Natuurlijk is dit meestal de afweging, snellere uitvoertijd = meer data bijhouden (zodat je minder moet berekenen). 
