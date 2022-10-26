@@ -306,9 +306,9 @@ int kmeansReps(double &bestDistSquaredSum,
 		if(debugClusters)
 			debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);	
 		if(debugCentroids){
-			for (size_t j = 0; j < numClusters; ++j){
+			for (size_t j = 0; j < numClusters; j++){
 				if(debugCentroids){
-					for (size_t i = 0; i < allPoints[0].getSize(); ++i)
+					for (size_t i = 0; i < allPoints[0].getSize(); i++)
 						debugCentroid.push_back(centroids[j].getDataPoint(i));
 				}
 			}
@@ -395,12 +395,12 @@ int kmeans(Rng &rng,
 	{
 		size_t numSteps = 0;
 
-		if(centroidDebugFileName.length() > 0 && r==0)
+		if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
+		else if(centroidDebugFileName.length() > 0 && r==0)
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
 		else if(clusterDebugFileName.length() > 0 && r==0)
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, true, centroidDebugFileName, clusterDebugFileName);
-		else if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
 		else
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName);
 	}
