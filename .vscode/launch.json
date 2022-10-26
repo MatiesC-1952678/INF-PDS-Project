@@ -30,6 +30,8 @@
                 "--output", "output/mouse_500x2.o.csv",
                 "--k", "3",
                 "--repetitions", "10", 
+                "--centroidtrace", "ctrace.csv",
+                "--trace", "trace.csv", 
                 "--seed", "1338"],
             "cwd": "/home/matiesclaesen/Documents/INF-PDS-Project/kmeans-startcode/",
             "externalConsole": false,
