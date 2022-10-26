@@ -35,6 +35,11 @@ Daarbij hebben we ook enkele toevoegingen gemaakt zoals:
 * duidelijke comments
 * gebruik van launch.json en tasks.json in VSCode
 
+###*2.1. Mappenstructuur**
+De verschillende pbs als uitvoer files staan in de map "FinalKmeans", deze werden uitgevoerd op het VSC met de finale code. De mappen "Output-and-error_debugging", "Csv-output_debugging" werden gebruikt tijdens het debuggen, hierin staan output files van mislukte pogingen.
+In de map "Correct_debugging" staan de output files van de eerste werkende versie tijdens het debuggen.
+"Greedy versie" en "Finale versie" bevatten de code voor beide versies van algoritmen.
+
 ##**3. Een GREEDY algoritme**
 Nadat we dit gedeelte werkende hadden bij ons programma hadden we besloten om eens te kijken in een abstracte vorm naar de mogelijke faalpunten van dit serieel programma. 
 
@@ -70,12 +75,12 @@ We zien natuurlijk een probleem bij deze code wat waarschijnlijk een grote impac
 
 Om dit probleem op te lossen hadden we dus besloten om een extra serieële versie te maken die de pseudocode achterwege laat en dit probleem probeert op te lossen. 
 
-###**1.1. Een ordening invoegen**
+###**3.1. Een ordening invoegen**
 was de lijst van clusters berekent op lijn 12, te ordenen. Hierbij zouden we een soort van insertion sort gebruiken die ervoor zorgt dat we bij lijn 2 niet meer door de gehele lijst van punten moeten lopen maar enkel door het subdeel dat behoort tot deze cluster. Hierdoor zouden we niet meer voor elke centroid door de gehele lijst moeten lopen maar enkele door elk punt nogmaals 1 keer. Deze oplossing leek ons nochtans tegenstrijdig met de huidige immplementatie aangezien we dan een andere manier moesten vinden om de clusters te linken aan de punten (doordat deze nu niet meer op de geassocieerde index staan). Hierbij zou dan ook het probleem zijn dat we weeral een grote lijst aan data moeten bijhouden tijdens het berekenen van ons programma. Natuurlijk is dit meestal de afweging, snellere uitvoertijd = meer data bijhouden (zodat je minder moet berekenen). 
 
 Toch waren we opzoek naar een betere methode die ook minder data bij moest houden.
 
-###**1.2 Een GREEDY algoritme**
+###**3.2 Een GREEDY algoritme**
 Na een uitgebreide brainstorm sessie hadden we een mogelijk alternatief gevonden dat ons probleem zeer efficient oploste en weinig data bijhield. We houden dan een kleine dictionary bij die elke cluster mapt op de totale afstand (berekent op lijn 8) en het totaal aantal elementen. We hadden ondervonden dat de code van lijn 7-13 waarschijnlijk niet weg te reduceren valt aangezien we in een zeer goed geval dan enkel lineair over onze lijst van punten moeten lopen. Toch hadden we ingezien dat de berekening van bij lijn 17 ook in deze eerste stap van het programma zou kunnen worden uitgevoerd.
 
 ``` python =
@@ -115,7 +120,7 @@ Na een uitgebreide brainstorm sessie hadden we een mogelijk alternatief gevonden
 ...
 ```
 
-**1.2.1 De eerste loop**
+**3.2.1 De eerste loop**
 De eerste loop krijgen we gewoon een verzadeging van elke centroid in de dict. We krijgen dat iets zoals het onderstaande. 
 
 ![greedy step 1](greedy-step1.png)
@@ -124,7 +129,7 @@ Voor elke centroid zal dan de totale coordinaten van het punt totalP (gedefiniee
 
 Het interessante is natuurlijk de tweede stap namelijk wanneer er een punt migreerd van cluster oftewel centroid.
 
-**1.2.2 Een migratie**
+**3.2.2 Een migratie**
 
 ![greedy step 2](greedy-step2.png)
 
