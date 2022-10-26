@@ -1,6 +1,6 @@
 # INF-PDS-Project - KMeans Serieel - Yarne Dirkx & Maties Claesen
 
-##**1. Een versie die werkt**
+**1. Een versie die werkt**
 
 Natuurlijk begin je altijd met het schrijven van een seriële versie die werkt. Hierbij hebben we ons sterk gebasseerd op de pseudo code die werd gegeven in de assignment. Hierbij valt natuurlijk niet veel te vermelden buiten het feit dat we dezelfde output krijgen als de referentie executable file geplaatst op het VSC.
 
@@ -15,7 +15,7 @@ De referentie executable:
 1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1,1,0,2,1,1,1,1,1,0,1,1,1,2,1,1,1,0,1,1,1,2,1,1,1,2,1,2,0,1,1,1,0,0,1,1,1,1,2,1,1,1,1,1,1,1,1,1,1,0,2,2,0,1,1,1,1,0,1,1,1,1,1,1,1,1,1,2,2,1,2,1,1,1,1,0,2,1,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,0,1,2,2,0,1,1,1,1,2,1,2,0,1,1,1,2,1,0,2,1,0,1,1,2,1,1,0,1,1,1,0,1,2,1,2,2,1,1,2,2,1,1,1,1,1,1,2,1,1,1,2,1,1,1,1,1,0,1,2,1,1,1,1,1,1,1,2,2,1,1,1,1,2,1,1,2,1,2,1,1,1,1,1,1,1,2,1,1,2,0,2,1,2,1,1,2,1,1,0,0,1,2,1,1,1,1,1,1,1,1,2,2,2,1,1,1,1,1,1,1,1,1,2,1,1,1,0,1,1,1,1,1,1,1,1,2,2,1,1,2,1,1,1,1,1,2,1,1,1,2,1,2,1,1,1,1,2,1,1,1,1,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,2,0,1,1,0,2,2,2,0
 ```
 
-##**2. Een geoptimaliseerdere versie**
+**2. Een geoptimaliseerdere versie**
 
 Nadat we een werkende versie hadden zagen we dat we enkele optimalisaties konden doorvoeren zodat ons serieel programma als robuuste fundamentele code kon zorgen in vergelijking met de komende parallele programma's. Een van de problemen die we hier zagen was het feit dat we veel data initialiseerde en managede tijdens het berekenen van onze resultaten. Dit kan zorgen voor een grote impact in overhead tijdens het uitvoeren van ons programma. Daarom hadden we besloten om deze data **allemaal vooraf te initialiseren** voordat we beginnen met berekeningen. Dit wil zeggen dat we ook een **grote datastructuur bijhouden** (bv: een vector van vectors in plaats van in de for elke keer een nieuwe vector te maken). Dit geeft ons als voordeel dat we de overhead vooraf kunnen plaatsen waardoor deze in latere fases van het project gemakkelijker te onderscheiden zal zijn i.v.m. het bekijken van de uitvoertijd, enzovoort. Het tweede voordeel dat we hieruit kunnen halen is het feit dat we bij het overstappen naar een parallel programma, eigenlijk al een **shared resource** bevatten die we kunnen verdelen via een **SIMD strategy** over onze verschillende threads. Natuurlijk zijn er ook andere mogelijkheden zoals loop-level parallelisme die we in die fase van het project zullen vergelijken en uitproberen.
 
@@ -35,13 +35,13 @@ Daarbij hebben we ook enkele toevoegingen gemaakt zoals:
 * duidelijke comments
 * gebruik van launch.json en tasks.json in VSCode
 
-###*2.1. Mappenstructuur**
+*2.1. Mappenstructuur**
 
 De verschillende pbs als uitvoer files staan in de map "FinalKmeans", deze werden uitgevoerd op het VSC met de finale code. De mappen "Output-and-error_debugging", "Csv-output_debugging" werden gebruikt tijdens het debuggen, hierin staan output files van mislukte pogingen.
 In de map "Correct_debugging" staan de output files van de eerste werkende versie tijdens het debuggen.
 "Greedy versie" en "Finale versie" bevatten de code voor beide versies van algoritmen.
 
-##**3. Een GREEDY algoritme**
+**3. Een GREEDY algoritme**
 
 Nadat we dit gedeelte werkende hadden bij ons programma hadden we besloten om eens te kijken in een abstracte vorm naar de mogelijke faalpunten van dit serieel programma. 
 
@@ -77,13 +77,13 @@ We zien natuurlijk een probleem bij deze code wat waarschijnlijk een grote impac
 
 Om dit probleem op te lossen hadden we dus besloten om een extra serieële versie te maken die de pseudocode achterwege laat en dit probleem probeert op te lossen. 
 
-###**3.1. Een ordening invoegen**
+**3.1. Een ordening invoegen**
 
 was de lijst van clusters berekent op lijn 12, te ordenen. Hierbij zouden we een soort van insertion sort gebruiken die ervoor zorgt dat we bij lijn 2 niet meer door de gehele lijst van punten moeten lopen maar enkel door het subdeel dat behoort tot deze cluster. Hierdoor zouden we niet meer voor elke centroid door de gehele lijst moeten lopen maar enkele door elk punt nogmaals 1 keer. Deze oplossing leek ons nochtans tegenstrijdig met de huidige immplementatie aangezien we dan een andere manier moesten vinden om de clusters te linken aan de punten (doordat deze nu niet meer op de geassocieerde index staan). Hierbij zou dan ook het probleem zijn dat we weeral een grote lijst aan data moeten bijhouden tijdens het berekenen van ons programma. Natuurlijk is dit meestal de afweging, snellere uitvoertijd = meer data bijhouden (zodat je minder moet berekenen). 
 
 Toch waren we opzoek naar een betere methode die ook minder data bij moest houden.
 
-###**3.2 Een GREEDY algoritme**
+**3.2 Een GREEDY algoritme**
 
 Na een uitgebreide brainstorm sessie hadden we een mogelijk alternatief gevonden dat ons probleem zeer efficient oploste en weinig data bijhield. We houden dan een kleine dictionary bij die elke cluster mapt op de totale afstand (berekent op lijn 8) en het totaal aantal elementen. We hadden ondervonden dat de code van lijn 7-13 waarschijnlijk niet weg te reduceren valt aangezien we in een zeer goed geval dan enkel lineair over onze lijst van punten moeten lopen. Toch hadden we ingezien dat de berekening van bij lijn 17 ook in deze eerste stap van het programma zou kunnen worden uitgevoerd.
 
