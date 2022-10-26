@@ -176,6 +176,7 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 	{
 		double currentdist = 0;
 
+
 		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 
