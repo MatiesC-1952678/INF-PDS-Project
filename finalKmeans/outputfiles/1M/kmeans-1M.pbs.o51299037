@@ -1,0 +1,63 @@
+time: 600
+nodes: 1
+procs: 36
+account string: llp_h_pds
+queue: q1h
+========================================================================
+sequential,1,1,input/1M_1000000x4.csv,1952226,3,10,1.14554e+13,3.183
+sequential,1,1,input/1M_1000000x4.csv,1952226,3,10,1.14554e+13,2.95417
+sequential_icc,1,1,input/1M_1000000x4.csv,1952226,3,10,1.14556e+13,0.831887
+========================================================================
+Epilogue args:
+Date: Wed Oct 26 18:21:43 CEST 2022
+Allocated nodes:
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+r25i13n11
+Job ID: 51299037.tier2-p-moab-2.tier2.hpc.kuleuven.be
+User ID: vsc34998
+Group ID: vsc34998
+Job Name: kmeans-1M.pbs
+Session ID: 36215
+Resource List: nodes=1:ppn=36,walltime=00:10:00,neednodes=1:ppn=36,pmem=5gb
+Resources Used: cput=00:00:12,vmem=282460kb,walltime=00:00:19,mem=40572kb,energy_used=0
+Queue Name: q1h
+Account String: llp_h_pds
+-------------------------------------------------------------------------
+time: 19
+nodes: 1
+procs: 36
+account: llp_h_pds
