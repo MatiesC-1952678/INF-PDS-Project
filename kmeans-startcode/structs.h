@@ -43,4 +43,3 @@ struct point
 			datapoints[i] /= divider;
 	}
 };
-
