@@ -1,0 +1,22 @@
+{
+    "configurations": [
+
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/kmeans",
+            "args": [
+                "--input", "mouse_500x2.csv", 
+                "--output", "outputfile.csv",
+                "--k", "3",
+                "--repetitions", "5", 
+                "--seed", "1952226",
+                "--trace", "debugCluster.csv"
+            ],
+            "cwd": "${fileDirname}",
+            "externalConsole": false,
+        }
+    ],
+    "version": "2.0.0"
+}
