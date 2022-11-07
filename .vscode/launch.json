@@ -5,25 +5,27 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "C/C++: g++-12 build and debug active file",
+        "name": "C/C++: g++-12 kmeans",
         "type": "cppdbg",
         "request": "launch",
-        "program": "${fileDirname}/${fileBasenameNoExtension}",
+        "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
         "args": [
-            "--input", "mouse_500x2.csv",
-            "--output", "output.csv",
-            "--repetitions", "10",
-            "--k", "3",
-            "--centroidtrace", "centroidtrace.csv",
-            "--trace", "clustertrace.csv",
-            "--seed", "1338"
+            "--input", "datasets/mouse_500x2.csv",
+            "--output", "output/output.csv",
+            "--repetitions", "3",
+            "--k", "2",
+            "--threads", "0",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
         ],
         "stopAtEntry": true,
         "cwd": "${workspaceFolder}",
         "environment": [],
         "externalConsole": false,
         "MIMode": "lldb",
-        "preLaunchTask": "C/C++: clang++ build active file"
+        "preLaunchTask": "pwd",
+        //"preLaunchTask": "C/C++: clang++ build active file"
       }
     ]
   }
