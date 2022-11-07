@@ -168,7 +168,7 @@ void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<poi
 	@post dist is the distance to the closest centroid
 	@return the index of the closest centroid
 */
-int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids, const int numClusters, const size_t offset)
+int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector<point> &centroids, const int numClusters, const size_t offset)
 {
 	point closestCentroid;
 	int indexCentroid;
@@ -288,11 +288,13 @@ int kmeansReps(double &bestDistSquaredSum,
 	{
 		steps++;
 		changed = false;
-		float distanceSquaredSum = 0;
+		double distanceSquaredSum = 0;
 
+		//1. calculate distances
+		//master
 		for (int p = 0; p < numPoints; ++p)
 		{
-			float dist = std::numeric_limits<float>::max();
+			double dist = std::numeric_limits<double>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
 
@@ -314,8 +316,10 @@ int kmeansReps(double &bestDistSquaredSum,
 			}
 		}
 
+		//2. averages
 		if (changed)
 		{
+			//master 
 			for (size_t j = 0; j < numClusters; ++j)
 				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 		}
@@ -391,6 +395,7 @@ int kmeans(Rng &rng,
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
+	
 	for (int r = 0; r < repetitions; r++)
 	{
 		size_t numSteps = 0;
