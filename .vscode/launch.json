@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "C/C++: g++-12 build and debug active file",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${fileDirname}/${fileBasenameNoExtension}",
+        "args": [
+            "--input", "mouse_500x2.csv",
+            "--output", "output.csv",
+            "--repetitions", "10",
+            "--k", "3",
+            "--centroidtrace", "centroidtrace.csv",
+            "--trace", "clustertrace.csv",
+            "--seed", "1338"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        "preLaunchTask": "C/C++: clang++ build active file"
+      }
+    ]
+  }

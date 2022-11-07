@@ -32,5 +32,6 @@
 *.app
 
 # Data
+datasets/
 kmeans-startcode/data
 kmeans-startcode/output

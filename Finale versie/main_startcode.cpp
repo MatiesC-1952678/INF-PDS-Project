@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -7,7 +8,6 @@
 #include "rng.h"
 #include "timer.h"
 #include "structs.h"
-
 
 void usage()
 {
@@ -396,6 +396,7 @@ int kmeans(Rng &rng,
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
 	
+	#pragma omp parallel for
 	for (int r = 0; r < repetitions; r++)
 	{
 		size_t numSteps = 0;
