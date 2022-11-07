@@ -10,9 +10,9 @@
 #FLAGS=-g -std=c++14
 
 # Settings for OpenMP
-FLAGS=-g -std=c++14 -fopenmp
+FLAGS= -std=c++14 -fopenmp
 
-CXX = g++-12
+CXX = g++
 
 all: kmeans
 
