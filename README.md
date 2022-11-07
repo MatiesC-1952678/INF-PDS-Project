@@ -1,4 +1,4 @@
-# INF-PDS-Project - KMeans Serieel - Yarne Dirkx & Maties Claesen
+# INF-PDS-Project - KMeans Serieel&OpenMP - Yarne Dirkx & Maties Claesen
 
 **1. Een versie die werkt**
 
