@@ -396,7 +396,7 @@ int kmeans(Rng &rng,
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
 	
-	//#pragma omp parallel for
+	#pragma omp parallel for
 	for (int r = 0; r < repetitions; r++)
 	{
 		size_t numSteps = 0;
