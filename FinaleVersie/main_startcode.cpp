@@ -322,18 +322,9 @@ int kmeansReps(double &bestDistSquaredSum,
 		//2. averages
 		if (changed)
 		{
-			#pragma omp parallel
-			{
-				#pragma omp master
-				{
-					//master 
-					for (size_t j = 0; j < numClusters; ++j){
-						#pragma omp task
-						centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
-					}
-					#pragma omp taskwait
-				}
-			}
+			#pragma omp parallel for
+			for (size_t j = 0; j < numClusters; ++j)
+				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 		}
 
 		if (distanceSquaredSum < bestDistSquaredSum)
