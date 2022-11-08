@@ -213,19 +213,19 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 	size_t numberOfPoints = 0;
 
 	//this is almost serial
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for (size_t i = 0; i < allPoints.size(); i++)
 	{
 		if (clusters[clusterOffset + i] == centroidIndex)
 		{
-			#pragma omp critical
+			//#pragma omp critical
 			avgPoint.add(allPoints[i]);
 			//#pragma omp atomic
 			numberOfPoints++;
 		}
 	}
 
-	#pragma omp critical //Niet nodig?
+	//#pragma omp critical //Niet nodig?
 	avgPoint.divide(numberOfPoints);
 	return avgPoint;
 }
@@ -296,7 +296,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		double distanceSquaredSum = 0;
 
 		//1. calculate distances
-		#pragma omp parallel for
+		//#pragma omp parallel for
 		for (int p = 0; p < numPoints; ++p)
 		{
 			double dist = std::numeric_limits<double>::max();
@@ -326,7 +326,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		//2. averages
 		if (changed)
 		{
-			#pragma omp parallel for
+			//#pragma omp parallel for
 			for (size_t j = 0; j < numClusters; ++j)
 				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 		}
