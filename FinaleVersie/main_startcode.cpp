@@ -150,6 +150,7 @@ FileCSVWriter openDebugFile(const std::string &n)
 */
 void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
 {
+	//#pragma omp parallel for
 	for(int rep = 0; rep < repetitions; ++rep) {
 		std::vector<size_t> indices(numClusters);
 		rng.pickRandomIndices(allPoints.size(), indices);
@@ -172,11 +173,13 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 {
 	point closestCentroid;
 	int indexCentroid;
+
+	//#pragma omp parallel for
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
 
-
+		//#pragma omp parallel for reduction(+:currentdist)
 		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 
@@ -278,8 +281,6 @@ int kmeansReps(double &bestDistSquaredSum,
 			   std::string &centroidDebugFile,
 			   std::string &clustersDebugFile			)
 {
-
-	
 	bool changed = true;
 	int steps = 0;
 	std::vector<double> debugCluster{};
@@ -291,7 +292,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		double distanceSquaredSum = 0;
 
 		//1. calculate distances
-		//master
+		#pragma omp parallel for
 		for (int p = 0; p < numPoints; ++p)
 		{
 			double dist = std::numeric_limits<double>::max();
@@ -395,7 +396,7 @@ int kmeans(Rng &rng,
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
-	
+
 	#pragma omp parallel for
 	for (int r = 0; r < repetitions; r++)
 	{

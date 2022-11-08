@@ -5,10 +5,10 @@
     "tasks": [
       {
         "type": "shell",
-        "label": "pwd",
-        "command": "ls FinaleVersie",
+        "label": "gmake",
+        "command": "gmake",
         "options": {
-          "cwd": "${workspaceFolder}"
+          "cwd": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie"
         },
         "problemMatcher": ["$gcc"],
         "group": {

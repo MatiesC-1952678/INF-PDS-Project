@@ -9,8 +9,9 @@
 # Settings for a debug build
 #FLAGS=-g -std=c++14
 
-# Settings for OpenMP
-FLAGS=-g -std=c++14 -fopenmp
+# Settings for OpenMP debug & optimized
+#FLAGS=-g -std=c++14 -fopenmp
+FLAGS=-O3 -DNDEBUG -fopenmp #-std=c++14
 
 CXX = g++-12
 
