@@ -478,6 +478,7 @@ int mainCxx(const std::vector<std::string> &args)
 	if (inputFileName.length() == 0 || outputFileName.length() == 0 || numClusters < 1 || repetitions < 1 || seed == 0)
 		usage();
 
+	omp_set_num_threads(numThreads);
 	Rng rng(seed);
 	return kmeans(rng, inputFileName, outputFileName, numClusters, repetitions,
 				  numBlocks, numThreads, centroidTraceFileName, clusterTraceFileName);
