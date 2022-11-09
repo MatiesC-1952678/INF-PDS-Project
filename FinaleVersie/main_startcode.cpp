@@ -8,6 +8,7 @@
 #include "rng.h"
 #include "timer.h"
 #include "structs.h"
+#include <algorithm>
 
 void usage()
 {
@@ -174,11 +175,11 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 	point closestCentroid;
 	int indexCentroid;
 
-	//#pragma omp parallel for
+	#pragma omp reduction(min:dist)
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
-
+		printf("Dist - Thread %d\n", omp_get_thread_num());
 		//#pragma omp parallel for reduction(+:currentdist)
 		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
@@ -195,6 +196,7 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 			dist = currentdist;
 			indexCentroid = c;
 		}
+		
 	}
 	return indexCentroid;
 }
@@ -326,7 +328,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		//2. averages
 		if (changed)
 		{
-			//#pragma omp parallel for
+			#pragma omp parallel for
 			for (size_t j = 0; j < numClusters; ++j)
 				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 		}
@@ -407,6 +409,8 @@ int kmeans(Rng &rng,
 	for (int r = 0; r < repetitions; r++)
 	{
 		size_t numSteps = 0;
+
+		printf("Rep - Thread %d\n", omp_get_thread_num());
 
 		if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);

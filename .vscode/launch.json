@@ -13,8 +13,8 @@
             "--input", "datasets/mouse_500x2.csv",
             "--output", "output/mouse.csv",
             "--repetitions", "3",
-            "--k", "2",
-            "--threads", "0",
+            "--k", "3",
+            "--threads", "8",
             //"--centroidtrace", "output/centroidtrace.csv",
             //"--trace", "output/clustertrace.csv",
             "--seed", "1952226"
@@ -35,9 +35,9 @@
         "args": [
             "--input", "datasets/1M_1000000x4.csv",
             "--output", "output/1M.csv",
-            "--repetitions", "10",
-            "--k", "10",
-            "--threads", "1",
+            "--repetitions", "3",
+            "--k", "2",
+            "--threads", "5",
             //"--centroidtrace", "output/centroidtrace.csv",
             //"--trace", "output/clustertrace.csv",
             "--seed", "1952226"
