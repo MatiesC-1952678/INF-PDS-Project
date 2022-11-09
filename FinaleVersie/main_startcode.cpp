@@ -150,7 +150,7 @@ FileCSVWriter openDebugFile(const std::string &n)
 */
 void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
 {
-	//#pragma omp parallel for
+	#pragma omp parallel for
 	for(int rep = 0; rep < repetitions; ++rep) {
 		std::vector<size_t> indices(numClusters);
 		rng.pickRandomIndices(allPoints.size(), indices);
@@ -296,7 +296,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		double distanceSquaredSum = 0;
 
 		//1. calculate distances
-		#pragma omp parallel for
+		//#pragma omp parallel for
 		for (int p = 0; p < numPoints; ++p)
 		{
 			double dist = std::numeric_limits<double>::max();
@@ -326,7 +326,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		//2. averages
 		if (changed)
 		{
-			#pragma omp parallel for
+			//#pragma omp parallel for
 			for (size_t j = 0; j < numClusters; ++j)
 				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 		}

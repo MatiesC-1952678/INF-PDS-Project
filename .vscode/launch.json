@@ -35,9 +35,9 @@
         "args": [
             "--input", "datasets/1M_1000000x4.csv",
             "--output", "output/1M.csv",
-            "--repetitions", "3",
-            "--k", "2",
-            "--threads", "0",
+            "--repetitions", "10",
+            "--k", "10",
+            "--threads", "1",
             //"--centroidtrace", "output/centroidtrace.csv",
             //"--trace", "output/clustertrace.csv",
             "--seed", "1952226"
