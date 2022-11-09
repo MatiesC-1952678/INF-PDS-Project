@@ -175,7 +175,7 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 	point closestCentroid;
 	int indexCentroid;
 
-	#pragma omp reduction(min:dist)
+	//#pragma omp reduction(min:dist)
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
@@ -298,7 +298,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		double distanceSquaredSum = 0;
 
 		//1. calculate distances
-		//#pragma omp parallel for
+		#pragma omp parallel for
 		for (int p = 0; p < numPoints; ++p)
 		{
 			double dist = std::numeric_limits<double>::max();
