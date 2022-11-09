@@ -179,7 +179,7 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
-		printf("Dist - Thread %d\n", omp_get_thread_num());
+		//printf("Dist - Thread %d\n", omp_get_thread_num());
 		//#pragma omp parallel for reduction(+:currentdist)
 		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
@@ -410,7 +410,7 @@ int kmeans(Rng &rng,
 	{
 		size_t numSteps = 0;
 
-		printf("Rep - Thread %d\n", omp_get_thread_num());
+		//printf("Rep - Thread %d\n", omp_get_thread_num());
 
 		if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
 			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
