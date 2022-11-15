@@ -230,7 +230,7 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 	#pragma parallel for schedule(static, CHUNK_SIZE) // reduction(+:datapoints)
 	for (size_t i = 0; i < allPoints.size(); i++)
 	{
-		printf("avg - Thread %d\n", omp_get_thread_num());
+		//printf("avg - Thread %d\n", omp_get_thread_num());
 		if (clusters[clusterOffset + i] == centroidIndex)
 		{
 			for (size_t j = 0; j < numCoords; j++)
