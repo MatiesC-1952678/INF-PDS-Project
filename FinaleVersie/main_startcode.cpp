@@ -10,6 +10,8 @@
 #include "structs.h"
 #include <algorithm>
 
+#define CHUNK_SIZE 5
+
 void usage()
 {
 	std::cerr << R"XYZ(
@@ -151,12 +153,12 @@ FileCSVWriter openDebugFile(const std::string &n)
 */
 void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
 {
-	#pragma omp parallel for
-	for(int rep = 0; rep < repetitions; ++rep) {
+	for (int rep = 0; rep < repetitions; ++rep)
+	{
 		std::vector<size_t> indices(numClusters);
 		rng.pickRandomIndices(allPoints.size(), indices);
 		for (size_t i = 0; i < numClusters; i++)
-			centroids[numClusters*rep + i] = allPoints[indices[i]];
+			centroids[numClusters * rep + i] = allPoints[indices[i]];
 	}
 }
 
@@ -175,12 +177,9 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 	point closestCentroid;
 	int indexCentroid;
 
-	//#pragma omp reduction(min:dist)
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
-		//printf("Dist - Thread %d\n", omp_get_thread_num());
-		//#pragma omp parallel for reduction(+:currentdist)
 		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 
@@ -196,7 +195,6 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 			dist = currentdist;
 			indexCentroid = c;
 		}
-		
 	}
 	return indexCentroid;
 }
@@ -211,24 +209,44 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 */
 point average_of_points_with_cluster(const size_t centroidIndex, const std::vector<int> &clusters, const size_t clusterOffset, std::vector<point> &allPoints)
 {
-	point avgPoint{};
-	size_t numberOfPoints = 0;
 
-	//this is almost serial
-	//#pragma omp parallel for
+	// int numberOfPoints1 = 0;
+	// point avgPoint1{};
+	// for (size_t i = 0; i < allPoints.size(); i++)
+	// {
+	// 	if (clusters[clusterOffset + i] == centroidIndex)
+	// 	{
+	// 		avgPoint1.add(allPoints[i]);
+	// 		numberOfPoints1++;
+	// 	}
+	// }
+
+	// avgPoint1.divide(numberOfPoints1);
+
+	size_t numPointsAveraged = 0;
+	const size_t totalAmountOfPoints = allPoints.size();
+	const size_t numCoords = allPoints[0].getSize();
+	std::vector<double> datapoints = std::vector<double>(numCoords, 0);
+	#pragma parallel for schedule(static, CHUNK_SIZE) // reduction(+:datapoints)
 	for (size_t i = 0; i < allPoints.size(); i++)
 	{
+		printf("avg - Thread %d\n", omp_get_thread_num());
 		if (clusters[clusterOffset + i] == centroidIndex)
 		{
-			//#pragma omp critical
-			avgPoint.add(allPoints[i]);
-			//#pragma omp atomic
-			numberOfPoints++;
+			for (size_t j = 0; j < numCoords; j++)
+			{
+				#pragma omp critical
+				datapoints[j] += allPoints[i].getDataPoint(j);
+			}
+			numPointsAveraged++;
 		}
 	}
 
-	//#pragma omp critical //Niet nodig?
-	avgPoint.divide(numberOfPoints);
+	point avgPoint{};
+	for (size_t i = 0; i < numCoords; i++)
+		avgPoint.addDataPoint(datapoints[i]);
+
+	avgPoint.divide(numPointsAveraged);
 	return avgPoint;
 }
 
@@ -238,7 +256,8 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 	@param cluster: vector with the closest centroid per point
 	@param clusterDebugFileName: the file name of the debug file
 */
-void writeClusterToDebugFile(std::vector<double> &cluster, std::string &clusterDebugFileName, const int numpoints){
+void writeClusterToDebugFile(std::vector<double> &cluster, std::string &clusterDebugFileName, const int numpoints)
+{
 	FileCSVWriter clustersDebugFile = openDebugFile(clusterDebugFileName);
 	clustersDebugFile.write(cluster, numpoints);
 	clustersDebugFile.close();
@@ -250,7 +269,8 @@ void writeClusterToDebugFile(std::vector<double> &cluster, std::string &clusterD
 	@param centroid: vector with the closest centroid per point
 	@param centroidDebugFileName: the file name of the debug file
 */
-void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centroidDebugFileName, const int dimension){
+void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centroidDebugFileName, const int dimension)
+{
 	FileCSVWriter centroidDebugFile = openDebugFile(centroidDebugFileName);
 	centroidDebugFile.write(centroid, dimension);
 	centroidDebugFile.close();
@@ -285,7 +305,7 @@ int kmeansReps(double &bestDistSquaredSum,
 			   bool debugCentroids,
 			   bool debugClusters,
 			   std::string &centroidDebugFile,
-			   std::string &clustersDebugFile			)
+			   std::string &clustersDebugFile)
 {
 	bool changed = true;
 	int steps = 0;
@@ -297,10 +317,12 @@ int kmeansReps(double &bestDistSquaredSum,
 		changed = false;
 		double distanceSquaredSum = 0;
 
-		//1. calculate distances
-		#pragma omp parallel for
+		// 1. calculate distances
+		//printf("Thread amount: %d\n", omp_get_num_threads());
+		#pragma omp parallel for schedule(static, CHUNK_SIZE) reduction(+: distanceSquaredSum)
 		for (int p = 0; p < numPoints; ++p)
 		{
+			// printf("dist - Thread %d\n", omp_get_thread_num());
 			double dist = std::numeric_limits<double>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
@@ -308,29 +330,61 @@ int kmeansReps(double &bestDistSquaredSum,
 			if (newCluster != clusters[clusterOffset + p])
 			{
 				clusters[clusterOffset + p] = newCluster;
+				//#pragma omp critical
 				changed = true;
 			}
 		}
 
-		//#pragma omp barrier
-
-		if(debugClusters)
-			debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);	
-		if(debugCentroids){
-			for (size_t j = 0; j < numClusters; j++){
-				if(debugCentroids){
+		if (debugClusters)
+			debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);
+		if (debugCentroids)
+		{
+			for (size_t j = 0; j < numClusters; j++)
+			{
+				if (debugCentroids)
+				{
 					for (size_t i = 0; i < allPoints[0].getSize(); i++)
 						debugCentroid.push_back(centroids[j].getDataPoint(i));
 				}
 			}
 		}
 
-		//2. averages
+		// 2. averages
 		if (changed)
 		{
-			#pragma omp parallel for
-			for (size_t j = 0; j < numClusters; ++j)
-				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
+			
+			for (size_t centroid = 0; centroid < numClusters; centroid++)
+			{
+				size_t numPointsAveraged = 0;
+				const size_t totalAmountOfPoints = allPoints.size();
+				const size_t numCoords = allPoints[0].getSize();
+				std::vector<double> datapoints = std::vector<double>(numCoords, 0);
+
+				
+				#pragma omp parallel for schedule(static, CHUNK_SIZE) //reduction(+:datapoints)
+				for (int p = 0; p < numPoints; ++p)
+				{
+					//printf("Thread amount: %d\n", omp_get_num_threads());
+					//printf("avg - Thread %d\n", omp_get_thread_num());
+					if (clusters[clusterOffset + p] == centroid)
+					{
+						for (size_t j = 0; j < numCoords; j++)
+						{
+							#pragma omp atomic
+							datapoints[j] += allPoints[p].getDataPoint(j);
+						}
+						#pragma omp atomic
+						numPointsAveraged++;
+					}
+				}
+
+				point avgPoint{};
+				for (size_t i = 0; i < numCoords; i++)
+					avgPoint.addDataPoint(datapoints[i]);
+
+				avgPoint.divide(numPointsAveraged);
+				centroids[centroidOffset + centroid] = avgPoint;
+			}
 		}
 
 		if (distanceSquaredSum < bestDistSquaredSum)
@@ -338,12 +392,11 @@ int kmeansReps(double &bestDistSquaredSum,
 			bestClusterOffset = clusterOffset;
 			bestDistSquaredSum = distanceSquaredSum;
 		}
-
 	}
 
-	if(debugClusters)
+	if (debugClusters)
 		writeClusterToDebugFile(debugCluster, clustersDebugFile, numPoints);
-	if(debugCentroids)
+	if (debugCentroids)
 		writeCentroidToDebugFile(debugCentroid, centroidDebugFile, allPoints[0].getSize());
 
 	return steps;
@@ -380,7 +433,7 @@ int kmeans(Rng &rng,
 
 	// initialize BIG variabels
 	size_t bestClusterOffset{0};
-	std::vector<int> clusters ((int)numPoints * repetitions, -1);
+	std::vector<int> clusters((int)numPoints * repetitions, -1);
 	/**
 	 * with amount of -1 in the matrix = number of points * repetitions
 	 * abstract example: [-1, -1, | -1, -1, | -1, -1]
@@ -394,10 +447,10 @@ int kmeans(Rng &rng,
 	 * centroids * repetitions
 	 * abstract example: [p1, p2, p3 | p1, p2, p3]
 	 * here are 3 centroids for 3 repetitions made
-	*/
+	 */
 
 	choose_centroids_at_random(numClusters, rng, centroids, repetitions, allPoints);
-	
+
 	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
 
@@ -405,21 +458,20 @@ int kmeans(Rng &rng,
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
 
-	#pragma omp parallel for
 	for (int r = 0; r < repetitions; r++)
 	{
 		size_t numSteps = 0;
 
-		//printf("Rep - Thread %d\n", omp_get_thread_num());
+		// printf("Rep - Thread %d\n", omp_get_thread_num());
 
-		if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
-		else if(centroidDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
-		else if(clusterDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, true, centroidDebugFileName, clusterDebugFileName);
+		if (centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r == 0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters * r, clusters, numPoints * r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
+		else if (centroidDebugFileName.length() > 0 && r == 0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters * r, clusters, numPoints * r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
+		else if (clusterDebugFileName.length() > 0 && r == 0)
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters * r, clusters, numPoints * r, allPoints, numPoints, numClusters, false, true, centroidDebugFileName, clusterDebugFileName);
 		else
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName);
+			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters * r, clusters, numPoints * r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName);
 	}
 
 	timer.stop();
@@ -449,7 +501,7 @@ int mainCxx(const std::vector<std::string> &args)
 	std::string inputFileName, outputFileName, centroidTraceFileName, clusterTraceFileName;
 	unsigned long seed = 0;
 
-	int numClusters = -1; 
+	int numClusters = -1;
 	int repetitions = -1;
 	int numBlocks = 1, numThreads = 1;
 	for (int i = 0; i < args.size(); i += 2)
