@@ -10,7 +10,7 @@
 #include "structs.h"
 #include <algorithm>
 
-#define CHUNK_SIZE 5
+#define CHUNK_SIZE 100
 
 void usage()
 {
