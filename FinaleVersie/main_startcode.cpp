@@ -311,6 +311,8 @@ int kmeansReps(double &bestDistSquaredSum,
 	int steps = 0;
 	std::vector<double> debugCluster{};
 	std::vector<double> debugCentroid{};
+	#pragma omp parallel schedule(guided) 
+	{
 	while (changed)
 	{
 		steps++;
@@ -319,7 +321,7 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		// 1. calculate distances
 		//printf("Thread amount: %d\n", omp_get_num_threads());
-		#pragma omp parallel for schedule(guided) reduction(+: distanceSquaredSum)
+		#pragma omp for reduction(+: distanceSquaredSum)
 		for (int p = 0; p < numPoints; ++p)
 		{
 			//printf("dist - Thread %d\n", omp_get_thread_num());
@@ -334,6 +336,8 @@ int kmeansReps(double &bestDistSquaredSum,
 				changed = true;
 			}
 		}
+
+		#pragma omp barrier
 
 		if (debugClusters)
 			debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);
@@ -361,7 +365,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				std::vector<double> datapoints = std::vector<double>(numCoords, 0);
 
 				
-				#pragma omp parallel for schedule(guided) reduction(+:numPointsAveraged) //reduction(+:datapoints) 
+				#pragma omp for schedule(guided) //reduction(+:numPointsAveraged) //reduction(+:datapoints) 
 				for (int p = 0; p < numPoints; ++p)
 				{
 					//printf("Thread amount: %d\n", omp_get_num_threads());
@@ -373,7 +377,7 @@ int kmeansReps(double &bestDistSquaredSum,
 							#pragma omp atomic
 							datapoints[j] += allPoints[p].getDataPoint(j);
 						}
-						//#pragma omp atomic
+						#pragma omp atomic
 						numPointsAveraged++;
 					}
 				}
@@ -392,6 +396,7 @@ int kmeansReps(double &bestDistSquaredSum,
 			bestClusterOffset = clusterOffset;
 			bestDistSquaredSum = distanceSquaredSum;
 		}
+	}
 	}
 
 	if (debugClusters)
