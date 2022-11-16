@@ -10,7 +10,7 @@
 #include "structs.h"
 #include <algorithm>
 
-#define CHUNK_SIZE 100
+#define CHUNK_SIZE 10
 
 void usage()
 {
@@ -319,7 +319,7 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		// 1. calculate distances
 		//printf("Thread amount: %d\n", omp_get_num_threads());
-		#pragma omp parallel for schedule(static, CHUNK_SIZE) reduction(+: distanceSquaredSum)
+		#pragma omp parallel for schedule(guided, CHUNK_SIZE) reduction(+: distanceSquaredSum)
 		for (int p = 0; p < numPoints; ++p)
 		{
 			// printf("dist - Thread %d\n", omp_get_thread_num());
@@ -361,7 +361,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				std::vector<double> datapoints = std::vector<double>(numCoords, 0);
 
 				
-				#pragma omp parallel for schedule(static, CHUNK_SIZE) //reduction(+:datapoints)
+				#pragma omp parallel for schedule(guided, CHUNK_SIZE) //reduction(+:datapoints)
 				for (int p = 0; p < numPoints; ++p)
 				{
 					//printf("Thread amount: %d\n", omp_get_num_threads());
