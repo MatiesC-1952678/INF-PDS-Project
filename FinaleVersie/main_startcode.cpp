@@ -177,24 +177,24 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 	point closestCentroid;
 	int indexCentroid;
 
+	#pragma omp parallel for schedule(guided)
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
 		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 
-		if (dist == std::numeric_limits<double>::max())
-		{
-			closestCentroid = centroids[offset + c];
-			dist = currentdist;
-			indexCentroid = c;
-		}
-		else if (currentdist < dist)
-		{
-			closestCentroid = centroids[offset + c];
-			dist = currentdist;
-			indexCentroid = c;
-		}
+		
+			if (dist == std::numeric_limits<double>::max() || currentdist < dist)
+			{
+				#pragma omp critical
+				{
+				closestCentroid = centroids[offset + c];
+				dist = currentdist;
+				indexCentroid = c;
+				}
+			}
+		
 	}
 	return indexCentroid;
 }
@@ -319,7 +319,6 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		// 1. calculate distances
 		//printf("Thread amount: %d\n", omp_get_num_threads());
-		#pragma omp parallel for schedule(guided) reduction(+:distanceSquaredSum)
 		for (int p = 0; p < numPoints; ++p)
 		{
 			//printf("dist - Thread %d\n", omp_get_thread_num());
@@ -353,6 +352,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		if (changed)
 		{
 			
+			#pragma omp parallel for schedule(guided) //reduction(+:numPointsAveraged) //reduction(+:datapoints) 
 			for (size_t centroid = 0; centroid < numClusters; centroid++)
 			{
 				size_t numPointsAveraged = 0;
@@ -361,7 +361,6 @@ int kmeansReps(double &bestDistSquaredSum,
 				std::vector<double> datapoints = std::vector<double>(numCoords, 0);
 
 				
-				#pragma omp parallel for schedule(guided) reduction(+:numPointsAveraged) //reduction(+:datapoints) 
 				for (int p = 0; p < numPoints; ++p)
 				{
 					//printf("Thread amount: %d\n", omp_get_num_threads());

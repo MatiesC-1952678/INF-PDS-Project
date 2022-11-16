@@ -51,13 +51,13 @@
         //"preLaunchTask": "C/C++: clang++ build active file"
       },
       {
-        "name": "C/C++: g++-12 kmeans 1M 1 thread",
+        "name": "C/C++: g++-12 kmeans 100k  1 thread",
         "type": "cppdbg",
         "request": "launch",
         "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
         "args": [
-            "--input", "datasets/1M_1000000x4.csv",
-            "--output", "output/1M.csv",
+          "--input", "datasets/100000x5.csv",
+          "--output", "output/100k.csv",
             "--repetitions", "3",
             "--k", "2",
             "--threads", "1",
@@ -74,7 +74,7 @@
         //"preLaunchTask": "C/C++: clang++ build active file"
       },
       {
-        "name": "C/C++: g++-12 kmeans 100k 8 threads",
+        "name": "C/C++: g++-12 kmeans 100k 4 threads",
         "type": "cppdbg",
         "request": "launch",
         "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
