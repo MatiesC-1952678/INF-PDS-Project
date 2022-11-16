@@ -5,7 +5,30 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "C/C++: g++-12 kmeans mouse",
+        "name": "C/C++: g++-12 kmeans 1th mouse",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
+        "args": [
+            "--input", "datasets/mouse_500x2.csv",
+            "--output", "output/mouse.csv",
+            "--repetitions", "5",
+            "--k", "5",
+            "--threads", "1",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        "preLaunchTask": "gmake",
+        //"preLaunchTask": "C/C++: clang++ build active file"
+      },
+      {
+        "name": "C/C++: g++-12 kmeans 8th mouse",
         "type": "cppdbg",
         "request": "launch",
         "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
@@ -51,16 +74,16 @@
         //"preLaunchTask": "C/C++: clang++ build active file"
       },
       {
-        "name": "C/C++: g++-12 kmeans 1M 8 threads",
+        "name": "C/C++: g++-12 kmeans 100k 8 threads",
         "type": "cppdbg",
         "request": "launch",
         "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
         "args": [
-            "--input", "datasets/1M_1000000x4.csv",
-            "--output", "output/1M.csv",
+            "--input", "datasets/100000x5.csv",
+            "--output", "output/100k.csv",
             "--repetitions", "3",
             "--k", "2",
-            "--threads", "8",
+            "--threads", "4",
             //"--centroidtrace", "output/centroidtrace.csv",
             //"--trace", "output/clustertrace.csv",
             "--seed", "1952226"

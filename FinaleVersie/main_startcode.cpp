@@ -207,48 +207,48 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector
 	@param allPoints: all the points from the input file
 	@return the average point from the cluster
 */
-point average_of_points_with_cluster(const size_t centroidIndex, const std::vector<int> &clusters, const size_t clusterOffset, std::vector<point> &allPoints)
-{
+// point average_of_points_with_cluster(const size_t centroidIndex, const std::vector<int> &clusters, const size_t clusterOffset, std::vector<point> &allPoints)
+// {
 
-	// int numberOfPoints1 = 0;
-	// point avgPoint1{};
-	// for (size_t i = 0; i < allPoints.size(); i++)
-	// {
-	// 	if (clusters[clusterOffset + i] == centroidIndex)
-	// 	{
-	// 		avgPoint1.add(allPoints[i]);
-	// 		numberOfPoints1++;
-	// 	}
-	// }
+// 	// int numberOfPoints1 = 0;
+// 	// point avgPoint1{};
+// 	// for (size_t i = 0; i < allPoints.size(); i++)
+// 	// {
+// 	// 	if (clusters[clusterOffset + i] == centroidIndex)
+// 	// 	{
+// 	// 		avgPoint1.add(allPoints[i]);
+// 	// 		numberOfPoints1++;
+// 	// 	}
+// 	// }
 
-	// avgPoint1.divide(numberOfPoints1);
+// 	// avgPoint1.divide(numberOfPoints1);
 
-	size_t numPointsAveraged = 0;
-	const size_t totalAmountOfPoints = allPoints.size();
-	const size_t numCoords = allPoints[0].getSize();
-	std::vector<double> datapoints = std::vector<double>(numCoords, 0);
-	#pragma parallel for schedule(static, CHUNK_SIZE) // reduction(+:datapoints)
-	for (size_t i = 0; i < allPoints.size(); i++)
-	{
-		//printf("avg - Thread %d\n", omp_get_thread_num());
-		if (clusters[clusterOffset + i] == centroidIndex)
-		{
-			for (size_t j = 0; j < numCoords; j++)
-			{
-				#pragma omp critical
-				datapoints[j] += allPoints[i].getDataPoint(j);
-			}
-			numPointsAveraged++;
-		}
-	}
+// 	size_t numPointsAveraged = 0;
+// 	const size_t totalAmountOfPoints = allPoints.size();
+// 	const size_t numCoords = allPoints[0].getSize();
+// 	std::vector<double> datapoints = std::vector<double>(numCoords, 0);
+// 	#pragma parallel for schedule(static, CHUNK_SIZE) // reduction(+:datapoints)
+// 	for (size_t i = 0; i < allPoints.size(); i++)
+// 	{
+// 		//printf("avg - Thread %d\n", omp_get_thread_num());
+// 		if (clusters[clusterOffset + i] == centroidIndex)
+// 		{
+// 			for (size_t j = 0; j < numCoords; j++)
+// 			{
+// 				#pragma omp critical
+// 				datapoints[j] += allPoints[i].getDataPoint(j);
+// 			}
+// 			numPointsAveraged++;
+// 		}
+// 	}
 
-	point avgPoint{};
-	for (size_t i = 0; i < numCoords; i++)
-		avgPoint.addDataPoint(datapoints[i]);
+// 	point avgPoint{};
+// 	for (size_t i = 0; i < numCoords; i++)
+// 		avgPoint.addDataPoint(datapoints[i]);
 
-	avgPoint.divide(numPointsAveraged);
-	return avgPoint;
-}
+// 	avgPoint.divide(numPointsAveraged);
+// 	return avgPoint;
+// }
 
 /*
 	Writes the clusters to the debug file
@@ -319,10 +319,10 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		// 1. calculate distances
 		//printf("Thread amount: %d\n", omp_get_num_threads());
-		#pragma omp parallel for schedule(guided, CHUNK_SIZE) reduction(+: distanceSquaredSum)
+		#pragma omp parallel for schedule(guided) reduction(+: distanceSquaredSum)
 		for (int p = 0; p < numPoints; ++p)
 		{
-			// printf("dist - Thread %d\n", omp_get_thread_num());
+			//printf("dist - Thread %d\n", omp_get_thread_num());
 			double dist = std::numeric_limits<double>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
@@ -361,7 +361,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				std::vector<double> datapoints = std::vector<double>(numCoords, 0);
 
 				
-				#pragma omp parallel for schedule(guided, CHUNK_SIZE) //reduction(+:datapoints)
+				#pragma omp parallel for schedule(guided) reduction(+:numPointsAveraged) //reduction(+:datapoints) 
 				for (int p = 0; p < numPoints; ++p)
 				{
 					//printf("Thread amount: %d\n", omp_get_num_threads());
@@ -373,7 +373,7 @@ int kmeansReps(double &bestDistSquaredSum,
 							#pragma omp atomic
 							datapoints[j] += allPoints[p].getDataPoint(j);
 						}
-						#pragma omp atomic
+						//#pragma omp atomic
 						numPointsAveraged++;
 					}
 				}
