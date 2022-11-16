@@ -319,7 +319,7 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		// 1. calculate distances
 		//printf("Thread amount: %d\n", omp_get_num_threads());
-		#pragma omp parallel for schedule(guided) reduction(+:distanceSquaredSum)
+		//#pragma omp parallel for schedule(guided) reduction(+:distanceSquaredSum)
 		for (int p = 0; p < numPoints; ++p)
 		{
 			//printf("dist - Thread %d\n", omp_get_thread_num());
@@ -361,7 +361,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				std::vector<double> datapoints = std::vector<double>(numCoords, 0);
 
 				
-				#pragma omp parallel for schedule(guided) //reduction(+:numPointsAveraged) //reduction(+:datapoints) 
+				//#pragma omp parallel for schedule(guided) //reduction(+:numPointsAveraged) //reduction(+:datapoints) 
 				for (int p = 0; p < numPoints; ++p)
 				{
 					//printf("Thread amount: %d\n", omp_get_num_threads());
@@ -370,10 +370,10 @@ int kmeansReps(double &bestDistSquaredSum,
 					{
 						for (size_t j = 0; j < numCoords; j++)
 						{
-							#pragma omp atomic
+							//#pragma omp atomic
 							datapoints[j] += allPoints[p].getDataPoint(j);
 						}
-						#pragma omp atomic
+						//#pragma omp atomic
 						numPointsAveraged++;
 					}
 				}
@@ -458,6 +458,7 @@ int kmeans(Rng &rng,
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
 
+	#pragma omp parallel for schedule(guided)
 	for (int r = 0; r < repetitions; r++)
 	{
 		size_t numSteps = 0;
