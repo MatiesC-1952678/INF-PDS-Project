@@ -365,7 +365,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				std::vector<double> datapoints = std::vector<double>(numCoords, 0);
 
 				
-				#pragma omp for schedule(guided) //reduction(+:numPointsAveraged) //reduction(+:datapoints) 
+				#pragma omp for //reduction(+:numPointsAveraged) //reduction(+:datapoints) 
 				for (int p = 0; p < numPoints; ++p)
 				{
 					//printf("Thread amount: %d\n", omp_get_num_threads());
