@@ -311,7 +311,7 @@ int kmeansReps(double &bestDistSquaredSum,
 	int steps = 0;
 	std::vector<double> debugCluster{};
 	std::vector<double> debugCentroid{};
-	#pragma omp parallel schedule(guided) 
+	#pragma omp parallel //schedule(guided) 
 	{
 	while (changed)
 	{
