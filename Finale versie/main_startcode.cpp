@@ -290,11 +290,12 @@ int kmeansReps(double &bestDistSquaredSum,
 		changed = false;
 		float distanceSquaredSum = 0;
 
+		//WORDT EEN CUDA kernel
 		for (int p = 0; p < numPoints; ++p)
 		{
 			float dist = std::numeric_limits<float>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
-			distanceSquaredSum += dist;
+			distanceSquaredSum += dist; //REDUCTION
 
 			if (newCluster != clusters[clusterOffset + p])
 			{
@@ -316,7 +317,8 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		if (changed)
 		{
-			for (size_t j = 0; j < numClusters; ++j)
+			//CUDA KERNEL
+			for (size_t j = 0; j < numClusters; ++j) //ZET IN average_of_points_with_cluster
 				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
 		}
 
@@ -337,7 +339,7 @@ int kmeansReps(double &bestDistSquaredSum,
 }
 
 int kmeans(Rng &rng,
-		   const std::string &inputFile,
+		   const std::string inputFile,
 		   const std::string &outputFileName,
 		   int numClusters,
 		   int repetitions,
