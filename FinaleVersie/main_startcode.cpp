@@ -2,39 +2,98 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
-#include <map>
+#include <math.h> /* floor */
+
 #include "CSVReader.hpp"
 #include "CSVWriter.hpp"
 #include "rng.h"
 #include "timer.h"
 #include "structs.h"
 
-struct pair 
+/* CUDA KERNELS */
+
+/*
+	Find the closest centroids index and distance for a given point
+	@param numClusters: number of centroids needed
+	@param dist: the distance to the closest centroid
+	@param centroids: a vector of random points from the input file
+	@param offset: the offset in the vectors to seperate repetitions
+	@pre dist is infinity
+	@post dist is the distance to the closest centroid
+	@return the index of the closest centroid
+*/
+int find_closest_centroid_index_and_distance(double &dist, point &p, point *centroids, const int numClusters, const size_t offset)
 {
-	point p;
-	int amount = 0;
+	point closestCentroid;
+	int indexCentroid;
+	for (size_t c = 0; c < numClusters; ++c)
+	{
+		double currentdist = 0;
 
-	pair() {
-		p = point{};
-	};
-	~pair() {};
+		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
+			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 
-	void increment(point& otherP) {
-		amount++;
-		p.add(otherP);
-	}
-	
-	void decrement(point& otherP) {
-		if (amount >= 1) {
-			amount--;
-			p.del(otherP);
+		if (dist == std::numeric_limits<double>::max())
+		{
+			closestCentroid = centroids[offset + c];
+			dist = currentdist;
+			indexCentroid = c;
+		}
+		else if (currentdist < dist)
+		{
+			closestCentroid = centroids[offset + c];
+			dist = currentdist;
+			indexCentroid = c;
 		}
 	}
+	return indexCentroid;
+}
 
-	point calcAvg() {
-		return p.divideTo(amount);
+/*
+TODO:
+	- double* distanceSquaredSum
+	- threadRange and threadSurplus implementation (now assuming threadRange is constant)
+	- assume repetitions is part of a 2D matrix (so you can also do repetitions in parallel)
+*/
+/*__global__*/ void assignNewClusters(
+	int *cuClusters,
+	const size_t clusterOffset,
+	point *cuCentroids,
+	const size_t centroidOffset,
+	point *cuPoints,
+	const int threadRange,
+	const int numClusters)
+{
+	/*
+		1 rep =
+		blocks -> 	|	|	|	|	| * |	|	|	|	|	|
+						threads ->	//|\\
+									12345
+									  |
+									  v
+									{...}
+		blockIdx = 		which block am I?
+		blockDim = 		how big is this certain block?
+		threadIdx = 	which thread am I in block *?
+		threadRange = 	how many datapoints does this thread get?
+
+		ex: blockIdx = *, blockDim = len(*), threadIdx = 3, threadRange = len({...})
+	*/
+	int start = 0; // blockIdx.x * blockDim.x  + (threadIdx.x * threadRange)
+	int stop = start + threadRange;
+	for (int p = start; p < stop; ++p)
+	{
+		double dist = std::numeric_limits<double>::max();
+		const int newCluster = find_closest_centroid_index_and_distance(dist, cuPoints[p], cuCentroids, numClusters, centroidOffset);
+		// distanceSquaredSum += dist; // REDUCTION
+
+		if (newCluster != cuClusters[clusterOffset + p])
+		{
+			cuClusters[clusterOffset + p] = newCluster;
+			//changed = true;
+		}
 	}
-};
+}
 
 void usage()
 {
@@ -177,57 +236,13 @@ FileCSVWriter openDebugFile(const std::string &n)
 */
 void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
 {
-	for(int rep = 0; rep < repetitions; ++rep) {
+	for (int rep = 0; rep < repetitions; ++rep)
+	{
 		std::vector<size_t> indices(numClusters);
 		rng.pickRandomIndices(allPoints.size(), indices);
 		for (size_t i = 0; i < numClusters; i++)
-			centroids[numClusters*rep + i] = allPoints[indices[i]];
+			centroids[numClusters * rep + i] = allPoints[indices[i]];
 	}
-}
-
-double calcDistance(point& p, point &centroid) 
-{
-	double currentDist = 0;
-	for (size_t i = 0; i < p.getSize() - 1; ++i) // p.getSize() or dimension = N
-		currentDist += pow((p.getDataPoint(i) - centroid.getDataPoint(i)), 2);
-	return currentDist;
-}
-
-/*
-	Find the closest centroids index and distance for a given point
-	@param numClusters: number of centroids needed
-	@param dist: the distance to the closest centroid
-	@param centroids: a vector of random points from the input file
-	@param offset: the offset in the vectors to seperate repetitions
-	@pre dist is infinity
-	@post dist is the distance to the closest centroid
-	@return the index of the closest centroid
-*/
-int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids, const int numClusters, const size_t offset)
-{
-	point closestCentroid;
-	int indexCentroid;
-	for (size_t c = 0; c < numClusters; ++c)
-	{
-		//double currentdist = calcDistance(p, centroids[offset + c]);
-		double currentdist = 0;
-		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
-			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
-		
-		if (dist == std::numeric_limits<double>::max())
-		{
-			closestCentroid = centroids[offset + c];
-			dist = currentdist;
-			indexCentroid = c;
-		}
-		else if (currentdist < dist)
-		{
-			closestCentroid = centroids[offset + c];
-			dist = currentdist;
-			indexCentroid = c;
-		}
-	}
-	return indexCentroid;
 }
 
 /*
@@ -238,20 +253,20 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 	@param allPoints: all the points from the input file
 	@return the average point from the cluster
 */
-point average_of_points_with_cluster(const size_t centroidIndex, const std::vector<int> &clusters, const size_t clusterOffset, std::vector<point> &allPoints)
+point average_of_points_with_cluster(const size_t centroidIndex, int* cuClusters, const size_t clusterOffset, point* allPoints, const int numPoints)
 {
 	point avgPoint{};
 	size_t numberOfPoints = 0;
-	for (size_t i = 0; i < allPoints.size(); i++)
+	for (size_t i = 0; i < numPoints; i++)
 	{
-		if (clusters[clusterOffset + i] == centroidIndex)
+		if (cuClusters[clusterOffset + i] == centroidIndex)
 		{
 			avgPoint.add(allPoints[i]);
 			numberOfPoints++;
 		}
 	}
 
-	//std::cout << avgPoint.getDataPoint(0) << std::endl;
+	// std::cout << avgPoint.getDataPoint(0) << std::endl;
 
 	avgPoint.divide(numberOfPoints);
 	return avgPoint;
@@ -263,7 +278,8 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 	@param cluster: vector with the closest centroid per point
 	@param clusterDebugFileName: the file name of the debug file
 */
-void writeClusterToDebugFile(std::vector<double> &cluster, std::string &clusterDebugFileName, const int numpoints){
+void writeClusterToDebugFile(std::vector<double> &cluster, std::string &clusterDebugFileName, const int numpoints)
+{
 	FileCSVWriter clustersDebugFile = openDebugFile(clusterDebugFileName);
 	clustersDebugFile.write(cluster, numpoints);
 	clustersDebugFile.close();
@@ -275,7 +291,8 @@ void writeClusterToDebugFile(std::vector<double> &cluster, std::string &clusterD
 	@param centroid: vector with the closest centroid per point
 	@param centroidDebugFileName: the file name of the debug file
 */
-void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centroidDebugFileName, const int dimension){
+void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centroidDebugFileName, const int dimension)
+{
 	FileCSVWriter centroidDebugFile = openDebugFile(centroidDebugFileName);
 	centroidDebugFile.write(centroid, dimension);
 	centroidDebugFile.close();
@@ -300,100 +317,58 @@ void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centro
  */
 int kmeansReps(double &bestDistSquaredSum,
 			   size_t &bestClusterOffset,
-			   std::vector<point> &centroids,
+			   point *cuCentroids,
 			   size_t centroidOffset,
-			   std::vector<int> &clusters,
+			   int *cuClusters,
 			   size_t clusterOffset,
-			   std::vector<point> &allPoints,
+			   point *cuPoints,
 			   const size_t numPoints,
 			   const int numClusters,
+			   const int numBlocks,
+			   const int numThreads,
 			   bool debugCentroids,
 			   bool debugClusters,
 			   std::string &centroidDebugFile,
-			   std::string &clustersDebugFile			)
+			   std::string &clustersDebugFile)
 {
 
-	
 	bool changed = true;
 	int steps = 0;
-
-	std::map<int, pair> distanceDict;
-	//std::vector<point> previousCentroids{};
-	for(int i = 0; i < numClusters; ++i) {
-		distanceDict.insert(std::pair<int, pair>(i, pair()));
-		//previousCentroids.push_back(point());
-	}
-
 	std::vector<double> debugCluster{};
 	std::vector<double> debugCentroid{};
 	while (changed)
 	{
 		steps++;
 		changed = false;
-		float distanceSquaredSum = 0;
+		double distanceSquaredSum = 0;
 
-		for (int p = 0; p < numPoints; ++p)
-		{
-			float dist = std::numeric_limits<float>::max();
-			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
-			distanceSquaredSum += dist;
-			int oldCluster = clusters[clusterOffset + p];
-			point currentPoint = allPoints[p];
-			if (newCluster != oldCluster)
-			{
-				//decrement previous centroid
-				if (oldCluster >= 0) {
-					distanceDict.at(oldCluster).decrement(currentPoint);
-				}
-				//increment current centroid
-				distanceDict.at(newCluster).increment(currentPoint);
-
-				clusters[clusterOffset + p] = newCluster;
-				changed = true;
-			} 
-		}
-		//std::cout << distanceDict.at(0).p.getDataPoint(0) << std::endl;
-		
-		if(debugClusters)
-			debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);	
-		if(debugCentroids){
-			for (size_t j = 0; j < numClusters; ++j){
-				if(debugCentroids){
-					for (size_t i = 0; i < allPoints[0].getSize(); ++i)
-						debugCentroid.push_back(centroids[j].getDataPoint(i));
-				}
-			}
-		}
+		// CUDA: Wordt Cuda kernel
+		// TODO: overschot verdelen over alle blocks (niet enkel de laatste)
+		int blockRange = floor(numPoints / numBlocks);
+		int surplusBlocks = numPoints % numBlocks;
+		int threadRange = floor(blockRange / numThreads);
+		int surplusThreads = blockRange % numThreads;
+		assignNewClusters(cuClusters, clusterOffset, cuCentroids, centroidOffset, cuPoints, threadRange, numClusters);
 
 		if (changed)
 		{
-			for (int j = 0; j < numClusters; ++j) {
-				//previousCentroids[j] = centroids[centroidOffset + j]; //TODO@ties: move constructor?
-				//centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
-				pair current = distanceDict.at(j);
-				centroids[centroidOffset + j] = current.calcAvg();
-			}
+			// CUDA: Wordt Cuda kernel
+			for (size_t j = 0; j < numClusters; ++j) // ZET IN average_of_points_with_cluster
+				cuCentroids[centroidOffset + j] = average_of_points_with_cluster(j, cuClusters, clusterOffset, cuPoints, numPoints);
 		}
 
-		
 		if (distanceSquaredSum < bestDistSquaredSum)
 		{
 			bestClusterOffset = clusterOffset;
 			bestDistSquaredSum = distanceSquaredSum;
 		}
-
 	}
-
-	if(debugClusters)
-		writeClusterToDebugFile(debugCluster, clustersDebugFile, numPoints);
-	if(debugCentroids)
-		writeCentroidToDebugFile(debugCentroid, centroidDebugFile, allPoints[0].getSize());
 
 	return steps;
 }
 
 int kmeans(Rng &rng,
-		   const std::string &inputFile,
+		   const std::string inputFile,
 		   const std::string &outputFileName,
 		   int numClusters,
 		   int repetitions,
@@ -409,7 +384,7 @@ int kmeans(Rng &rng,
 		std::cerr << "Unable to open output file " << outputFileName << std::endl;
 		return -1;
 	}
-	
+
 	static size_t numPoints = 0; // Will reset in the readData function anyways = rows
 	static size_t dimension = 0; // Will reset in the readData function anyways = cols
 	std::vector<point> allPoints{};
@@ -423,7 +398,6 @@ int kmeans(Rng &rng,
 
 	// initialize BIG variabels
 	size_t bestClusterOffset{0};
-	std::vector<int> clusters ((int)numPoints * repetitions, -1);
 	/**
 	 * with amount of -1 in the matrix = number of points * repetitions
 	 * abstract example: [-1, -1, | -1, -1, | -1, -1]
@@ -431,18 +405,34 @@ int kmeans(Rng &rng,
 	 * in this case there are only 2 points in the entire csv file (2 rows),
 	 * and 3 repetitions in total
 	 */
+	std::vector<int> clusters((int)numPoints * repetitions, -1);
 
-	std::vector<point> centroids(numClusters * repetitions);
 	/**
 	 * centroids * repetitions
 	 * abstract example: [p1, p2, p3 | p1, p2, p3]
 	 * here are 3 centroids for 3 repetitions made
-	*/
+	 */
+	std::vector<point> centroids(numClusters * repetitions);
 
 	choose_centroids_at_random(numClusters, rng, centroids, repetitions, allPoints);
-	
+
 	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
+
+	// CUDA: CPU -> GPU allocation
+	int *cuClustersPointer = &clusters[0];
+	point *cuCentroidsPointer = &centroids[0];
+	point *cuPointsPointer = &allPoints[0];
+	size_t sizeOfClusters = numPoints * repetitions * sizeof(int);
+	size_t sizeOfCentroids = numClusters * repetitions * sizeof(point);
+	size_t sizeOfPoints = numPoints * sizeof(point);
+	// cudaMalloc(&cuClustersPointer, sizeOfClusters);
+	// cudaMalloc(&cuCentroidsPointer, sizeOfCentroids);
+	// cudaMalloc(&cuPointsPointer, sizeOfPoints);
+
+	// cudaMemcpy(cuClustersPointer, clusters.data(), sizeOfClusters, cudaMemcpyHostToDevice);
+	// cudaMemcpy(cuCentroidsPointer, centroids.data(), sizeOfCentroids, cudaMemcpyHostToDevice);
+	// cudaMemcpy(cuPointsPointer, allPoints.data(), sizeOfPoints, cudaMemcpyHostToDevice);
 
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
@@ -450,22 +440,24 @@ int kmeans(Rng &rng,
 	for (int r = 0; r < repetitions; r++)
 	{
 		size_t numSteps = 0;
-
-		
-		
-		//std::cout << stepsPerRepetition[r] << std::endl;
-
-		// Make sure debug logging is only done on first iteration ; subsequent checks
-		// with is_open will indicate that no logging needs to be done anymore.
-		if(centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, true, centroidDebugFileName, clusterDebugFileName);
-		else if(centroidDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
-		else if(clusterDebugFileName.length() > 0 && r==0)
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, true, centroidDebugFileName, clusterDebugFileName);
-		else
-			stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName);
+		stepsPerRepetition[r] = kmeansReps(
+			bestDistSquaredSum,
+			bestClusterOffset,
+			cuCentroidsPointer,				 // CUDA centroids pointer
+			numClusters * r * sizeof(point), // centroids internal offset for this rep
+			cuClustersPointer,				 // CUDA clusters pointer
+			numPoints * r,					 //
+			cuPointsPointer,
+			numPoints,
+			numClusters,
+			numBlocks,
+			numThreads,
+			false,
+			false,
+			centroidDebugFileName,
+			clusterDebugFileName);
 	}
+	// TODO: CUDA: GPU -> CPU allocation + cudaFree
 
 	timer.stop();
 
@@ -494,7 +486,7 @@ int mainCxx(const std::vector<std::string> &args)
 	std::string inputFileName, outputFileName, centroidTraceFileName, clusterTraceFileName;
 	unsigned long seed = 0;
 
-	int numClusters = -1; 
+	int numClusters = -1;
 	int repetitions = -1;
 	int numBlocks = 1, numThreads = 1;
 	for (int i = 0; i < args.size(); i += 2)

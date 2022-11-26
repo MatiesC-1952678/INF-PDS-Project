@@ -12,7 +12,7 @@ Hoe een oplossing schaalt wanneer we meer rekeneenheden gebruiken
 * 1,2,... blocks -> cuda thread typisch meer dan 1 datapunt behandelen
 
 
-## TODO
+## CODE
 - [ ] threads per block?
 - [ ] meet uitvoertijd voor ≠ # blocks
 - [ ] benodigd # blocks BEREKENEN ~ # datapunten
@@ -31,3 +31,7 @@ Hoe een oplossing schaalt wanneer we meer rekeneenheden gebruiken
 - [ ] zet # threads die we gebruikt hebben erin
 - [ ] Dezelfde vragen als openmp
 
+# TODO
+- [ ] zet eerst je functie om in C code (zie of die werkt)
+  - [ ] gebruik pointers
+  - [ ] 
