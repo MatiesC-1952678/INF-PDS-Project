@@ -36,4 +36,5 @@ kmeans-startcode/data
 kmeans-startcode/output
 
 /datasets
+/output
 .DS_Store
