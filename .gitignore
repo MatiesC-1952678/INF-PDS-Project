@@ -31,7 +31,10 @@
 *.out
 *.app
 
+*/.DS_Store
+
 # Data
+datasets/
 kmeans-startcode/data
 kmeans-startcode/output
 

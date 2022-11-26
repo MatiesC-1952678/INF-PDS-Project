@@ -2,7 +2,6 @@
 #include <vector>
 #include <stdio.h>
 
-// TODO@yarne: maybe put this in a seperate file (like my structs.h file)
 struct point
 {
 	std::vector<double> datapoints;
