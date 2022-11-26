@@ -8,9 +8,9 @@
         "name": "C/C++: g++-12 kmeans 1th mouse",
         "type": "cppdbg",
         "request": "launch",
-        "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
+        "program": "/Users/matiesclaesen/Documents/repos/inf-project/FinaleVersie/kmeans",
         "args": [
-            "--input", "datasets/mouse_500x2.csv",
+            "--input", "/Users/matiesclaesen/Documents/datasets/mouse_500x2.csv",
             "--output", "output/mouse.csv",
             "--repetitions", "5",
             "--k", "5",

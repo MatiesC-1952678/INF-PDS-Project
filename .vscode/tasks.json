@@ -8,7 +8,7 @@
         "label": "gmake",
         "command": "gmake",
         "options": {
-          "cwd": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie"
+          "cwd": "/Users/matiesclaesen/Documents/repos/inf-project/FinaleVersie"
         },
         "problemMatcher": ["$gcc"],
         "group": {
