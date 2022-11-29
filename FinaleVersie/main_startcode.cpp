@@ -268,6 +268,9 @@ point average_of_points_with_cluster(const size_t centroidIndex, int* cuClusters
 			numberOfPoints++;
 		}
 	}
+	// std::cout << avgPoint.getDataPoint(0);
+	avgPoint.divide(numberOfPoints);
+	return avgPoint;
 }
 
 /*
@@ -371,12 +374,12 @@ int kmeansReps(double &bestDistSquaredSum,
 		// }
 
 		// 2. averages
-		// if (*cuChanged)
-		// {
-		// 	// CUDA: Wordt Cuda kernel
-		// 	for (size_t j = 0; j < numClusters; ++j) // ZET IN average_of_points_with_cluster
-		// 		cuCentroids[centroidOffset + j] = average_of_points_with_cluster(j, cuClusters, clusterOffset, cuPoints, numPoints);
-		// }
+		if (*cuChanged)
+		{
+			// CUDA: Wordt Cuda kernel
+			for (size_t j = 0; j < numClusters; ++j) // ZET IN average_of_points_with_cluster
+				cuCentroids[centroidOffset + j] = average_of_points_with_cluster(j, cuClusters, clusterOffset, cuPoints, numPoints);
+		}
 
 		if (*cuDistanceSquaredSum < bestDistSquaredSum)
 		{
