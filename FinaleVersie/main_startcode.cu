@@ -3,7 +3,7 @@
 #include <string>
 #include <cstdlib>
 #include <math.h> /* floor */
-
+#include <cuda.h>
 #include "CSVReader.hpp"
 #include "CSVWriter.hpp"
 #include "rng.h"
@@ -56,7 +56,7 @@ TODO:
 	- threadRange and threadSurplus implementation (now assuming threadRange is constant)
 	- assume repetitions is part of a 2D matrix (so you can also do repetitions in parallel)
 */
-/*__global__*/ void assignNewClusters(
+__global__ void assignNewClusters(
 	int *cuClusters,
 	const size_t clusterOffset,
 	point *cuCentroids,
@@ -82,6 +82,7 @@ TODO:
 
 		ex: blockIdx = *, blockDim = len(*), threadIdx = 3, threadRange = len({...})
 	*/
+	*changed = false;
 	int start = 0; // blockIdx.x * blockDim.x  + (threadIdx.x * threadRange)
 	int stop = start + threadRange;
 	for (int p = start; p < stop; ++p)
@@ -334,11 +335,12 @@ int kmeansReps(double &bestDistSquaredSum,
 	int steps = 0;
 	std::vector<double> debugCluster{};
 	std::vector<double> debugCentroid{};
-	while (*cuChanged)
+	bool changed = false; 
+	while (changed)
 	{
 		steps++;
 		
-		*cuChanged = false;
+		
 		// CUDA: Wordt Cuda kernel
 		// TODO: overschot verdelen over alle blocks (niet enkel de laatste)
 		int blockRange = floor(numPoints / numBlocks);
@@ -355,6 +357,7 @@ int kmeansReps(double &bestDistSquaredSum,
 							cuDistanceSquaredSum, 
 							cuChanged	);
 
+		cudaMemcpy(changed, &cuChanged, sizeof(bool), cudaMemcpyDeviceToHost)
 
 		// if (debugClusters)
 		// 	debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);
@@ -376,6 +379,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		// 	// CUDA: Wordt Cuda kernel
 		// 	for (size_t j = 0; j < numClusters; ++j) // ZET IN average_of_points_with_cluster
 		// 		cuCentroids[centroidOffset + j] = average_of_points_with_cluster(j, cuClusters, clusterOffset, cuPoints, numPoints);
+				//FIXME: Oh ik weet waarom da hier bad malloc geeft, die cuCentroids is aangemaakt als pointer op de gpu, ma als ik da assign hier op de cpu, dan werkt da natuurlijk niet!
 		// }
 
 		if (*cuDistanceSquaredSum < bestDistSquaredSum)
@@ -462,17 +466,17 @@ int kmeans(Rng &rng,
 	size_t sizeOfDistanceSquaredSum = repetitions * sizeof(double);
 
 
-	// cudaMalloc(&cuClustersPointer, sizeOfClusters);
-	// cudaMalloc(&cuCentroidsPointer, sizeOfCentroids);
-	// cudaMalloc(&cuPointsPointer, sizeOfPoints);
-	// cudaMalloc(&cuChangedPointer, sizeOfChanged);
-	// cudaMalloc(&cuDistanceSquaredSumPointer, sizeOfDistanceSquaredSum);
+	cudaMalloc(&cuClustersPointer, sizeOfClusters);
+	cudaMalloc(&cuCentroidsPointer, sizeOfCentroids);
+	cudaMalloc(&cuPointsPointer, sizeOfPoints);
+	cudaMalloc(&cuChangedPointer, sizeOfChanged);
+	cudaMalloc(&cuDistanceSquaredSumPointer, sizeOfDistanceSquaredSum);
 
-	// cudaMemcpy(cuClustersPointer, clusters.data(), sizeOfClusters, cudaMemcpyHostToDevice);
-	// cudaMemcpy(cuCentroidsPointer, centroids.data(), sizeOfCentroids, cudaMemcpyHostToDevice);
-	// cudaMemcpy(cuPointsPointer, allPoints.data(), sizeOfPoints, cudaMemcpyHostToDevice);
-	// cudaMemcpy(cuChangedPointer, changed.data(), sizeOfChanged, cudaMemcpyHostToDevice);
-	// cudaMemcpy(cuDistanceSquaredSumPointer, distanceSquaredSum.data(), sizeOfDistanceSquaredSum, cudaMemcpyHostToDevice);
+	cudaMemcpy(cuClustersPointer, clusters.data(), sizeOfClusters, cudaMemcpyHostToDevice);
+	cudaMemcpy(cuCentroidsPointer, centroids.data(), sizeOfCentroids, cudaMemcpyHostToDevice);
+	cudaMemcpy(cuPointsPointer, allPoints.data(), sizeOfPoints, cudaMemcpyHostToDevice);
+	cudaMemcpy(cuChangedPointer, changed.data(), sizeOfChanged, cudaMemcpyHostToDevice);
+	cudaMemcpy(cuDistanceSquaredSumPointer, distanceSquaredSum.data(), sizeOfDistanceSquaredSum, cudaMemcpyHostToDevice);
 
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
