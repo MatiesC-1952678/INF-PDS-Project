@@ -12,9 +12,9 @@
 #include <algorithm>
 
 /* CUDA KERNELS */
-__global__ void updateCentroids(){
+// __global__ void updateCentroids(){
 
-}
+// }
 
 
 /*
@@ -27,32 +27,32 @@ __global__ void updateCentroids(){
 	@post dist is the distance to the closest centroid
 	@return the index of the closest centroid
 */
-__device__ int find_closest_centroid_index_and_distance(double &dist, point &p, point *centroids, const int numClusters, const size_t offset)
-{
-	point closestCentroid;
-	int indexCentroid;
-	for (size_t c = 0; c < numClusters; ++c)
-	{
-		double currentdist = 0;
+// __device__ int find_closest_centroid_index_and_distance(double &dist, point &p, point *centroids, const int numClusters, const size_t offset)
+// {
+// 	point closestCentroid;
+// 	int indexCentroid;
+// 	for (size_t c = 0; c < numClusters; ++c)
+// 	{
+// 		double currentdist = 0;
 
-		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
-			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
+// 		for (size_t whichCluster = 0; whichCluster < p.getSize(); ++whichCluster) // p.getSize() or dimension = N
+// 			currentdist += pow((p.getDataPoint(whichCluster) - centroids[offset + c].getDataPoint(whichCluster)), 2);
 
-		if (dist == 0)
-		{
-			closestCentroid = centroids[offset + c];
-			dist = currentdist;
-			indexCentroid = c;
-		}
-		else if (currentdist < dist)
-		{
-			closestCentroid = centroids[offset + c];
-			dist = currentdist;
-			indexCentroid = c;
-		}
-	}
-	return indexCentroid;
-}
+// 		if (dist == 0)
+// 		{
+// 			closestCentroid = centroids[offset + c];
+// 			dist = currentdist;
+// 			indexCentroid = c;
+// 		}
+// 		else if (currentdist < dist)
+// 		{
+// 			closestCentroid = centroids[offset + c];
+// 			dist = currentdist;
+// 			indexCentroid = c;
+// 		}
+// 	}
+// 	return indexCentroid;
+// }
 
 /*
 TODO:
@@ -60,48 +60,48 @@ TODO:
 	- threadRange and threadSurplus implementation (now assuming threadRange is constant)
 	- assume repetitions is part of a 2D matrix (so you can also do repetitions in parallel)
 */
-__global__ void assignNewClusters(
-	int *cuClusters,
-	const size_t clusterOffset,
-	point *cuCentroids,
-	const size_t centroidOffset,
-	point *cuPoints,
-	const int threadRange,
-	const int numClusters,
-	double* distanceSquaredSum,
-	bool* changed)
-{
-	/*
-		1 rep =
-		blocks -> 	|	|	|	|	| * |	|	|	|	|	|
-						threads ->	//|\\
-									12345
-									  |
-									  v
-									{...}
-		blockIdx = 		which block am I?
-		blockDim = 		how big is this certain block?
-		threadIdx = 	which thread am I in block *?
-		threadRange = 	how many datapoints does this thread get?
+// __global__ void assignNewClusters(
+// 	int *cuClusters,
+// 	const size_t clusterOffset,
+// 	point *cuCentroids,
+// 	const size_t centroidOffset,
+// 	point *cuPoints,
+// 	const int threadRange,
+// 	const int numClusters,
+// 	double* distanceSquaredSum,
+// 	bool* changed)
+// {
+// 	/*
+// 		1 rep =
+// 		blocks -> 	|	|	|	|	| * |	|	|	|	|	|
+// 						threads ->	//|\\
+// 									12345
+// 									  |
+// 									  v
+// 									{...}
+// 		blockIdx = 		which block am I?
+// 		blockDim = 		how big is this certain block?
+// 		threadIdx = 	which thread am I in block *?
+// 		threadRange = 	how many datapoints does this thread get?
 
-		ex: blockIdx = *, blockDim = len(*), threadIdx = 3, threadRange = len({...})
-	*/
-	*changed = false;
-	int start = 0; // blockIdx.x * blockDim.x  + (threadIdx.x * threadRange)
-	int stop = start + threadRange;
-	for (int p = start; p < stop; ++p)
-	{
-		double dist = 0;
-		const int newCluster = find_closest_centroid_index_and_distance(dist, cuPoints[p], cuCentroids, numClusters, centroidOffset);
-		*distanceSquaredSum += dist; // REDUCTION
+// 		ex: blockIdx = *, blockDim = len(*), threadIdx = 3, threadRange = len({...})
+// 	*/
+// 	*changed = false;
+// 	int start = 0; // blockIdx.x * blockDim.x  + (threadIdx.x * threadRange)
+// 	int stop = start + threadRange;
+// 	for (int p = start; p < stop; ++p)
+// 	{
+// 		double dist = 0;
+// 		const int newCluster = find_closest_centroid_index_and_distance(dist, cuPoints[p], cuCentroids, numClusters, centroidOffset);
+// 		*distanceSquaredSum += dist; // REDUCTION
 
-		if (newCluster != cuClusters[clusterOffset + p])
-		{
-			cuClusters[clusterOffset + p] = newCluster;
-			*changed = true;
-		}
-	}
-}
+// 		if (newCluster != cuClusters[clusterOffset + p])
+// 		{
+// 			cuClusters[clusterOffset + p] = newCluster;
+// 			*changed = true;
+// 		}
+// 	}
+// }
 
 void usage()
 {
@@ -204,8 +204,9 @@ void readData(std::ifstream &input, std::vector<double> &allData, size_t &numRow
 		else if (numColsExpected != (int)row.size())
 			throw std::runtime_error("Incompatible number of colums read in line " + std::to_string(line) + ": expecting " + std::to_string(numColsExpected) + " but got " + std::to_string(row.size()));
 
-		for (auto x : row)
+		for (auto x : row){
 			allData.push_back(x);
+    }
 
 		line++;
 	}
@@ -243,20 +244,22 @@ void choose_centroids_at_random(const int numClusters, const int dimension, Rng 
 	for (int rep = 0; rep < repetitions; ++rep)
 	{
 		std::vector<size_t> indices(numClusters);
-		rng.pickRandomIndices(allPoints.size(), indices);
+		rng.pickRandomIndices(allPoints.size()/dimension, indices);
 		const int whichRep = numClusters * rep; 
 		for (size_t cluster = 0; cluster < numClusters; cluster++) {
-			const int i = cluster * dimension;
+			const int whichCluster = cluster * dimension;
 			for (size_t whichCoordinate = 0; whichCoordinate < dimension; whichCoordinate++) {
-				centroids[whichRep + i + whichCoordinate] = allPoints[indices[cluster] + whichCoordinate];
-			}
+				centroids[whichRep + whichCluster + whichCoordinate] = allPoints[indices[cluster] + whichCoordinate];
+        // printf("%d\n", indices[whichCoordinate]);
+      }
 		}
 	}
 
-	for (size_t i = 0; i < 10 ; i++)
-	{
-		printf("%d", centroids[i]);
-	}
+	// for (size_t i = 0; i < 10 ; i++)
+	// {
+	//   // printf("%f\n", allPoints[i]);
+  //   printf("%f\n", centroids[i]);
+	// }
 	
 }
 
@@ -272,11 +275,11 @@ point average_of_points_with_cluster(const size_t centroidIndex, int* cuClusters
 {
 	point avgPoint{};
 	size_t numberOfPoints = 0;
-	for (size_t i = 0; i < numPoints; i++)
+	for (size_t whichCluster = 0; whichCluster < numPoints; whichCluster++)
 	{
-		if (cuClusters[clusterOffset + i] == centroidIndex)
+		if (cuClusters[clusterOffset + whichCluster] == centroidIndex)
 		{
-			avgPoint.add(allPoints[i]);
+			avgPoint.add(allPoints[whichCluster]);
 			numberOfPoints++;
 		}
 	}
@@ -362,17 +365,17 @@ int kmeansReps(double &bestDistSquaredSum,
 		int surplusBlocks = numPoints % numBlocks;
 		int threadRange = floor(blockRange / numThreads);
 		int surplusThreads = blockRange % numThreads;
-		assignNewClusters<<<blockRange,threadRange>>>(	
-              cuClusters, 
-							clusterOffset, 
-							cuCentroids, 
-							centroidOffset, 
-							cuPoints, 
-							threadRange, 
-							numClusters, 
-							cuDistanceSquaredSum, 
-							cuChanged	
-              );
+		// assignNewClusters<<<blockRange,threadRange>>>(	
+    //           cuClusters, 
+		// 					clusterOffset, 
+		// 					cuCentroids, 
+		// 					centroidOffset, 
+		// 					cuPoints, 
+		// 					threadRange, 
+		// 					numClusters, 
+		// 					cuDistanceSquaredSum, 
+		// 					cuChanged	
+    //           );
 
 		//cudaMemcpy(&changed, cuChanged, sizeof(bool), cudaMemcpyDeviceToHost);
 
@@ -384,8 +387,8 @@ int kmeansReps(double &bestDistSquaredSum,
 		// 	{
 		// 		if (debugCentroids)
 		// 		{
-		// 			for (size_t i = 0; i < allPoints[0].getSize(); i++)
-		// 				debugCentroid.push_back(centroids[whichCoordinate].getDataPoint(i));
+		// 			for (size_t whichCluster = 0; whichCluster < allPoints[0].getSize(); whichCluster++)
+		// 				debugCentroid.push_back(centroids[whichCoordinate].getDataPoint(whichCluster));
 		// 		}
 		// 	}
 		// }
@@ -494,9 +497,9 @@ int kmeans(Rng &rng,
 	cudaMemcpy(cuChangedPointer, &changed, sizeOfChanged, cudaMemcpyHostToDevice);
 	cudaMemcpy(cuDistanceSquaredSumPointer, &distanceSquaredSum, sizeOfDistanceSquaredSum, cudaMemcpyHostToDevice);
 
-	// Do the k-means routine a number of times, each time starting from
-	// different random centroids (use Rng::pickRandomIndices), and keep
-	// the best result of these repetitions.
+	// // Do the k-means routine a number of times, each time starting from
+	// // different random centroids (use Rng::pickRandomIndices), and keep
+	// // the best result of these repetitions.
 
 	for (int r = 0; r < repetitions; r++)
 	{
@@ -505,24 +508,24 @@ int kmeans(Rng &rng,
 		// printf("Rep - Thread %d\n", omp_get_thread_num());
 
 		//if (centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r == 0) {
-			stepsPerRepetition[r] = kmeansReps(
-			bestDistSquaredSum,
-			bestClusterOffset,
-			cuCentroidsPointer,				 	// CUDA centroids pointer
-			numClusters * r, 					// centroids internal offset for this rep
-			cuClustersPointer,				 	// CUDA clusters pointer
-			numPoints * r ,						//
-			cuPointsPointer,
-			cuChangedPointer,
-			cuDistanceSquaredSumPointer,
-			numPoints,
-			numClusters,
-			numBlocks,
-			numThreads,
-			false,
-			false,
-			centroidDebugFileName,
-			clusterDebugFileName);
+			// stepsPerRepetition[r] = kmeansReps(
+			// bestDistSquaredSum,
+			// bestClusterOffset,
+			// cuCentroidsPointer,				 	// CUDA centroids pointer
+			// numClusters * r, 					// centroids internal offset for this rep
+			// cuClustersPointer,				 	// CUDA clusters pointer
+			// numPoints * r ,						//
+			// cuPointsPointer,
+			// cuChangedPointer,
+			// cuDistanceSquaredSumPointer,
+			// numPoints,
+			// numClusters,
+			// numBlocks,
+			// numThreads,
+			// false,
+			// false,
+			// centroidDebugFileName,
+			// clusterDebugFileName);
 		//} 
 		// else if (centroidDebugFileName.length() > 0 && r == 0)
 		// 	stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters * r, clusters, numPoints * r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
@@ -563,29 +566,29 @@ int mainCxx(const std::vector<std::string> &args)
 	int numClusters = -1;
 	int repetitions = -1;
 	int numBlocks = 1, numThreads = 1;
-	for (int i = 0; i < args.size(); i += 2)
+	for (int whichCluster = 0; whichCluster < args.size(); whichCluster += 2)
 	{
-		if (args[i] == "--input")
-			inputFileName = args[i + 1];
-		else if (args[i] == "--output")
-			outputFileName = args[i + 1];
-		else if (args[i] == "--centroidtrace")
-			centroidTraceFileName = args[i + 1];
-		else if (args[i] == "--trace")
-			clusterTraceFileName = args[i + 1];
-		else if (args[i] == "--k")
-			numClusters = stoi(args[i + 1]);
-		else if (args[i] == "--repetitions")
-			repetitions = stoi(args[i + 1]);
-		else if (args[i] == "--seed")
-			seed = stoul(args[i + 1]);
-		else if (args[i] == "--blocks")
-			numBlocks = stoi(args[i + 1]);
-		else if (args[i] == "--threads")
-			numThreads = stoi(args[i + 1]);
+		if (args[whichCluster] == "--input")
+			inputFileName = args[whichCluster + 1];
+		else if (args[whichCluster] == "--output")
+			outputFileName = args[whichCluster + 1];
+		else if (args[whichCluster] == "--centroidtrace")
+			centroidTraceFileName = args[whichCluster + 1];
+		else if (args[whichCluster] == "--trace")
+			clusterTraceFileName = args[whichCluster + 1];
+		else if (args[whichCluster] == "--k")
+			numClusters = stoi(args[whichCluster + 1]);
+		else if (args[whichCluster] == "--repetitions")
+			repetitions = stoi(args[whichCluster + 1]);
+		else if (args[whichCluster] == "--seed")
+			seed = stoul(args[whichCluster + 1]);
+		else if (args[whichCluster] == "--blocks")
+			numBlocks = stoi(args[whichCluster + 1]);
+		else if (args[whichCluster] == "--threads")
+			numThreads = stoi(args[whichCluster + 1]);
 		else
 		{
-			std::cerr << "Unknown argument '" << args[i] << "'" << std::endl;
+			std::cerr << "Unknown argument '" << args[whichCluster] << "'" << std::endl;
 			return -1;
 		}
 	}
@@ -600,9 +603,10 @@ int mainCxx(const std::vector<std::string> &args)
 
 int main(int argc, char *argv[])
 {
+  
 	std::vector<std::string> args;
-	for (int i = 1; i < argc; i++)
-		args.push_back(argv[i]);
+	for (int whichCluster = 1; whichCluster < argc; whichCluster++)
+		args.push_back(argv[whichCluster]);
 
 	return mainCxx(args);
 	
