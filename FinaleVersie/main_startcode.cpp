@@ -346,6 +346,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		*cuChanged = false;
 		// CUDA: Wordt Cuda kernel
 		// TODO: overschot verdelen over alle blocks (niet enkel de laatste)
+		*cuDistanceSquaredSum = 0.0;
 		int blockRange = floor(numPoints / numBlocks);
 		int surplusBlocks = numPoints % numBlocks;
 		int threadRange = floor(blockRange / numThreads);
@@ -451,14 +452,15 @@ int kmeans(Rng &rng,
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
 
 	bool changed = true;
-	std::vector<double> distanceSquaredSum(repetitions, 0);
+	//std::vector<double> distanceSquaredSum(repetitions, 0);
+	double distanceSquaredSum = 0.0;
 
 	// CUDA: CPU -> GPU allocation
 	int *cuClustersPointer = &clusters[0];
 	point *cuCentroidsPointer = &centroids[0];
 	point *cuPointsPointer = &allPoints[0];
 	bool *cuChangedPointer = &changed;
-	double *cuDistanceSquaredSumPointer = &distanceSquaredSum[0];
+	double *cuDistanceSquaredSumPointer = &distanceSquaredSum;
 
 	size_t sizeOfClusters = numPoints * repetitions * sizeof(int);
 	size_t sizeOfCentroids = numClusters * repetitions * sizeof(point);
