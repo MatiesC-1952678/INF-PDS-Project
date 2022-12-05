@@ -16,7 +16,6 @@
 
 // }
 
-
 /*
 	Find the closest centroids index and distance for a given point
 	@param numClusters: number of centroids needed
@@ -27,23 +26,24 @@
 	@post dist is the distance to the closest centroid
 	@return the index of the closest centroid
 */
-/* __device__ */ int find_closest_centroid_index_and_distance(double &dist, double* p, double *centroids, const int numClusters, const size_t offset, const int dimension)
+/* __device__ */ int find_closest_centroid_index_and_distance(double &dist, double *p, double *centroids, const int numClusters, const size_t offset, const int dimension)
 {
 	// point closestCentroid;
 	int indexCentroid;
 	for (size_t c = 0; c < numClusters; ++c)
 	{
 		double currentdist = 0;
+		int whichCentroid = c * dimension;
 
-		for (size_t i = 0; i < dimension; ++i){ // p.getSize() or dimension = N
-			int whichCentroid = c * dimension;
+		for (size_t i = 0; i < dimension; ++i)
+		{ // p.getSize() or dimension = N
 			currentdist += pow((p[i] - centroids[offset + whichCentroid + i]), 2);
-			printf("%f\n", currentdist);
-			printf("%f\n", p[i]);
-			printf("%f\n", centroids[offset + whichCentroid + i]);
+			//printf("%d: %f - whichCentroid: %d \n",c, currentdist, whichCentroid);
+			// printf("p: %f\n", p[i]);
+			// printf("c: %f - offset:%d - i: %d\n", centroids[offset + whichCentroid + i], offset, i);
 		}
 
-		if (dist == 0)
+		if (dist == -1)
 		{
 			// closestCentroid = centroids[offset + c];
 			dist = currentdist;
@@ -73,9 +73,10 @@ TODO:
 	double *cuPoints,
 	const int threadRange,
 	const int numClusters,
-	double* distanceSquaredSum,
-	bool* cuChanged, 
-	const int dimension)
+	double *distanceSquaredSum,
+	bool *cuChanged,
+	const int dimension,
+	const int numPoints)
 {
 	/*
 		1 rep =
@@ -93,18 +94,17 @@ TODO:
 		ex: blockIdx = *, blockDim = len(*), threadIdx = 3, threadRange = len({...})
 	*/
 
-	*cuChanged = false;
 	int start = 0; // blockIdx.x * blockDim.x  + (threadIdx.x * threadRange)
 	int stop = start + threadRange;
-	for (int p = start; p < 8; ++p)
+	for (int p = start; p < numPoints; ++p)
 	{
-		double dist = 0;
-		const int newCluster = find_closest_centroid_index_and_distance(dist, &cuPoints[p], cuCentroids, numClusters, centroidOffset, dimension);
-		//*distanceSquaredSum += dist; // REDUCTION
+		double dist = -1;
+		const int newCluster = find_closest_centroid_index_and_distance(dist, &cuPoints[p * dimension], cuCentroids, numClusters, centroidOffset, dimension);
+		*distanceSquaredSum += dist; // REDUCTION
 
-		if (newCluster != cuClusters[clusterOffset + p])
+		if (newCluster != cuClusters[clusterOffset + p * dimension])
 		{
-			cuClusters[clusterOffset + p] = newCluster;
+			cuClusters[clusterOffset + p * dimension] = newCluster;
 			*cuChanged = true;
 		}
 	}
@@ -211,14 +211,15 @@ void readData(std::ifstream &input, std::vector<double> &allData, size_t &numRow
 		else if (numColsExpected != (int)row.size())
 			throw std::runtime_error("Incompatible number of colums read in line " + std::to_string(line) + ": expecting " + std::to_string(numColsExpected) + " but got " + std::to_string(row.size()));
 
-		for (auto x : row){
+		for (auto x : row)
+		{
 			allData.push_back(x);
-    }
+		}
 
 		line++;
 	}
 
-	numRows = (size_t)allData.size()/numColsExpected;
+	numRows = (size_t)allData.size() / numColsExpected;
 	numCols = (size_t)numColsExpected;
 }
 
@@ -251,24 +252,28 @@ void choose_centroids_at_random(const int numClusters, const int dimension, Rng 
 	for (int rep = 0; rep < repetitions; ++rep)
 	{
 		std::vector<size_t> indices(numClusters);
-		rng.pickRandomIndices(allPoints.size()/dimension, indices);
-		const int whichRep = numClusters * rep; 
-		for (size_t cluster = 0; cluster < numClusters; cluster++) {
+		rng.pickRandomIndices(allPoints.size() / dimension, indices);
+
+		const int whichRep = numClusters * rep * dimension;
+
+		for (size_t cluster = 0; cluster < numClusters; cluster++)
+		{
 			const int whichCluster = cluster * dimension;
-			for (size_t whichCoordinate = 0; whichCoordinate < dimension; whichCoordinate++) {
+
+			// printf("%d\n", indices[cluster]);
+			for (size_t whichCoordinate = 0; whichCoordinate < dimension; whichCoordinate++)
+			{
 				centroids[whichRep + whichCluster + whichCoordinate] = allPoints[indices[cluster] * dimension + whichCoordinate];
-        // printf("%f\n", allPoints[indices[cluster]*dimension + whichCoordinate]);
-        // printf("%d\n", indices[cluster]*dimension);
-      }
+				// printf("centroids%d %f\n", whichCoordinate, allPoints[indices[cluster]*dimension + whichCoordinate]);
+			}
 		}
 	}
 
 	// for (size_t i = 0; i < allPoints.size() ; i++)
 	// {
-	  // printf("%f\n", allPoints[i]);
-    // printf("%f\n", centroids[i]);
+	// printf("%f\n", allPoints[i]);
+	// printf("%f\n", centroids[i]);
 	// }
-	
 }
 
 /*
@@ -279,22 +284,33 @@ void choose_centroids_at_random(const int numClusters, const int dimension, Rng 
 	@param allPoints: all the points from the input file
 	@return the average point from the cluster
 */
-// point average_of_points_with_cluster(const size_t centroidIndex, int* cuClusters, const size_t clusterOffset, double* allPoints, const int numPoints)
-// {
-// 	point avgPoint{};
-// 	size_t numberOfPoints = 0;
-// 	for (size_t whichCluster = 0; whichCluster < numPoints; whichCluster++)
-// 	{
-// 		if (cuClusters[clusterOffset + whichCluster] == centroidIndex)
-// 		{
-// 			avgPoint.add(allPoints[whichCluster]);
-// 			numberOfPoints++;
-// 		}
-// 	}
-// 	// std::cout << avgPoint.getDataPoint(0);
-// 	avgPoint.divide(numberOfPoints);
-// 	return avgPoint;
-// }
+void average_of_points_with_cluster(
+	double *avgPoint,
+	const size_t centroidIndex,
+	int *cuClusters,
+	const size_t clusterOffset,
+	double *allPoints,
+	const int numPoints,
+	const int dimension)
+{
+	size_t numberOfPoints = 0;
+	for (size_t p = 0; p < numPoints; p++)
+	{
+		if (cuClusters[clusterOffset + p * dimension] == centroidIndex)
+		{
+			for (size_t i = 0; i < dimension; i++)
+			{
+				avgPoint[i] += allPoints[p * dimension + i];
+				//printf("%f\n", avgPoint[i]);
+			}
+			numberOfPoints++;
+			//printf("--- number of points  %d\n", numberOfPoints);
+		}
+	}
+	// std::cout << avgPoint.getDataPoint(0);
+	for (size_t i = 0; i < dimension; i++)
+		avgPoint[i] /= numberOfPoints;
+}
 
 /*
 	Writes the clusters to the debug file
@@ -321,8 +337,6 @@ void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centro
 	centroidDebugFile.write(centroid, dimension);
 	centroidDebugFile.close();
 }
-
-
 
 /*
 	Does a kmeans run
@@ -366,26 +380,29 @@ int kmeansReps(double &bestDistSquaredSum,
 	// std::vector<double> debugCentroid{};
 	while (*cuChanged)
 	{
+
 		steps++;
 		*cuChanged = false;
+		*cuDistanceSquaredSum = 0.0;
+
 		// CUDA: Wordt Cuda kernel
 		// TODO: overschot verdelen over alle blocks (niet enkel de laatste)
 		int blockRange = floor(numPoints / numBlocks);
 		int surplusBlocks = numPoints % numBlocks;
 		int threadRange = floor(blockRange / numThreads);
 		int surplusThreads = blockRange % numThreads;
-		assignNewClusters/* <<<32,32>>> */(	
-            cuClusters, 
-			clusterOffset, 
-			cuCentroids, 
-			centroidOffset, 
-			cuPoints, 
-			threadRange, 
-			numClusters, 
-			cuDistanceSquaredSum, 
+		assignNewClusters /* <<<32,32>>> */ (
+			cuClusters,
+			clusterOffset,
+			cuCentroids,
+			centroidOffset,
+			cuPoints,
+			threadRange,
+			numClusters,
+			cuDistanceSquaredSum,
 			cuChanged,
-			dimension	
-        );
+			dimension,
+			(int)numPoints);
 
 		// cudaMemcpy(&changed, cuChanged, sizeof(bool), cudaMemcpyDeviceToHost);
 
@@ -404,18 +421,31 @@ int kmeansReps(double &bestDistSquaredSum,
 		// }
 
 		// 2. averages
-		// if (*cuChanged)
-		// {
-		// 	// CUDA: Wordt Cuda kernel
-		// 	for (size_t whichCoordinate = 0; whichCoordinate < numClusters; ++whichCoordinate)
-		// 		cuCentroids[centroidOffset + whichCoordinate] = average_of_points_with_cluster(whichCoordinate, cuClusters, clusterOffset, cuPoints, numPoints);
-		// }
+		if (*cuChanged)
+		{
+			// memCopy 1 average point
+			//  CUDA: Wordt Cuda kernel
+			for (size_t cluster = 0; cluster < numClusters; ++cluster)
+			{
+				std::vector<double> averagePoint(dimension, 0);
+				average_of_points_with_cluster(&averagePoint[0], cluster, cuClusters, clusterOffset, cuPoints, numPoints, dimension);
 
-		// if (*cuDistanceSquaredSum < bestDistSquaredSum)
-		// {
-		// 	bestClusterOffset = clusterOffset;
-		// 	bestDistSquaredSum = *cuDistanceSquaredSum;
-		// }
+				//printf("--- centroids \n");
+				for (int coor = 0; coor < dimension; coor++)
+				{
+					cuCentroids[centroidOffset + cluster * dimension + coor] = averagePoint[coor];
+					//printf("%f\n", cuCentroids[centroidOffset + cluster * dimension + coor]);
+				}
+			}
+		}
+
+		if (*cuDistanceSquaredSum < bestDistSquaredSum)
+		{
+			bestClusterOffset = clusterOffset;
+			bestDistSquaredSum = *cuDistanceSquaredSum;
+		}
+
+		//exit(0);
 	}
 
 	// if (debugClusters)
@@ -479,13 +509,14 @@ int kmeans(Rng &rng,
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
 
 	bool changed = true;
-	//std::vector<double> distanceSquaredSum(repetitions, 0);
+	// std::vector<double> distanceSquaredSum(repetitions, 0);
 	double distanceSquaredSum = 0.0;
 
 	// CUDA: CPU -> GPU allocation
-	int *cuClustersPointer= &clusters[0];
-	double *cuCentroidsPointer, *cuPointsPointer= &centroids[0]; //point *cuPointsPointer = &allPoints[0];
-	bool *cuChangedPointer= &changed;
+	int *cuClustersPointer = &clusters[0];
+	double *cuCentroidsPointer = &centroids[0];
+	double *cuPointsPointer = &allPoints[0];
+	bool *cuChangedPointer = &changed;
 	double *cuDistanceSquaredSumPointer = &distanceSquaredSum;
 
 	size_t sizeOfClusters = numPoints * repetitions * sizeof(int);
@@ -493,7 +524,6 @@ int kmeans(Rng &rng,
 	size_t sizeOfPoints = numPoints * dimension * sizeof(double);
 	size_t sizeOfChanged = sizeof(bool);
 	size_t sizeOfDistanceSquaredSum = repetitions * sizeof(double);
-
 
 	// cudaMalloc(&cuClustersPointer, sizeOfClusters);
 	// cudaMalloc(&cuCentroidsPointer, sizeOfCentroids);
@@ -517,14 +547,14 @@ int kmeans(Rng &rng,
 
 		// printf("Rep - Thread %d\n", 5);
 
-		//if (centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r == 0) {
-			stepsPerRepetition[r] = kmeansReps(
+		// if (centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r == 0) {
+		stepsPerRepetition[r] = kmeansReps(
 			bestDistSquaredSum,
 			bestClusterOffset,
-			cuCentroidsPointer,				 	// CUDA centroids pointer
-			numClusters * r, 					// centroids internal offset for this rep
-			cuClustersPointer,				 	// CUDA clusters pointer
-			numPoints * r ,						//
+			cuCentroidsPointer,			 // CUDA centroids pointer
+			numClusters * r * dimension, // centroids internal offset for this rep
+			cuClustersPointer,			 // CUDA clusters pointer
+			numPoints * r * dimension,	 //
 			cuPointsPointer,
 			cuChangedPointer,
 			cuDistanceSquaredSumPointer,
@@ -537,7 +567,7 @@ int kmeans(Rng &rng,
 			centroidDebugFileName,
 			clusterDebugFileName,
 			dimension);
-		//} 
+		//}
 		// else if (centroidDebugFileName.length() > 0 && r == 0)
 		// 	stepsPerRepetition[r] = kmeansReps(bestDistSquaredSum, bestClusterOffset, centroids, numClusters * r, clusters, numPoints * r, allPoints, numPoints, numClusters, true, false, centroidDebugFileName, clusterDebugFileName);
 		// else if (clusterDebugFileName.length() > 0 && r == 0)
@@ -614,11 +644,10 @@ int mainCxx(const std::vector<std::string> &args)
 
 int main(int argc, char *argv[])
 {
-  
+
 	std::vector<std::string> args;
 	for (int whichCluster = 1; whichCluster < argc; whichCluster++)
 		args.push_back(argv[whichCluster]);
 
 	return mainCxx(args);
-	
 }
