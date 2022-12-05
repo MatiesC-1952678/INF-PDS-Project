@@ -12,6 +12,10 @@
 #include <algorithm>
 
 /* CUDA KERNELS */
+__global__ void updateCentroids(){
+
+}
+
 
 /*
 	Find the closest centroids index and distance for a given point
@@ -269,6 +273,9 @@ point average_of_points_with_cluster(const size_t centroidIndex, int* cuClusters
 			numberOfPoints++;
 		}
 	}
+	// std::cout << avgPoint.getDataPoint(0);
+	avgPoint.divide(numberOfPoints);
+	return avgPoint;
 }
 
 /*
@@ -296,6 +303,8 @@ void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centro
 	centroidDebugFile.write(centroid, dimension);
 	centroidDebugFile.close();
 }
+
+
 
 /*
 	Does a kmeans run
@@ -335,12 +344,11 @@ int kmeansReps(double &bestDistSquaredSum,
 	int steps = 0;
 	std::vector<double> debugCluster{};
 	std::vector<double> debugCentroid{};
-	bool changed = false; 
-	while (changed)
+	while (*cuChanged)
 	{
 		steps++;
 		
-		
+		*cuChanged = false;
 		// CUDA: Wordt Cuda kernel
 		// TODO: overschot verdelen over alle blocks (niet enkel de laatste)
 		int blockRange = floor(numPoints / numBlocks);
@@ -374,13 +382,12 @@ int kmeansReps(double &bestDistSquaredSum,
 		// }
 
 		// 2. averages
-		// if (*cuChanged)
-		// {
-		// 	// CUDA: Wordt Cuda kernel
-		// 	for (size_t j = 0; j < numClusters; ++j) // ZET IN average_of_points_with_cluster
-		// 		cuCentroids[centroidOffset + j] = average_of_points_with_cluster(j, cuClusters, clusterOffset, cuPoints, numPoints);
-				//FIXME: Oh ik weet waarom da hier bad malloc geeft, die cuCentroids is aangemaakt als pointer op de gpu, ma als ik da assign hier op de cpu, dan werkt da natuurlijk niet!
-		// }
+		if (*cuChanged)
+		{
+			// CUDA: Wordt Cuda kernel
+			for (size_t j = 0; j < numClusters; ++j)
+				cuCentroids[centroidOffset + j] = average_of_points_with_cluster(j, cuClusters, clusterOffset, cuPoints, numPoints);
+		}
 
 		if (*cuDistanceSquaredSum < bestDistSquaredSum)
 		{
@@ -450,14 +457,15 @@ int kmeans(Rng &rng,
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
 
 	bool changed = true;
-	std::vector<double> distanceSquaredSum(repetitions, 0);
+	//std::vector<double> distanceSquaredSum(repetitions, 0);
+	double distanceSquaredSum = 0.0;
 
 	// CUDA: CPU -> GPU allocation
 	int *cuClustersPointer = &clusters[0];
 	point *cuCentroidsPointer = &centroids[0];
 	point *cuPointsPointer = &allPoints[0];
 	bool *cuChangedPointer = &changed;
-	double *cuDistanceSquaredSumPointer = &distanceSquaredSum[0];
+	double *cuDistanceSquaredSumPointer = &distanceSquaredSum;
 
 	size_t sizeOfClusters = numPoints * repetitions * sizeof(int);
 	size_t sizeOfCentroids = numClusters * repetitions * sizeof(point);

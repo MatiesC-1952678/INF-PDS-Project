@@ -28,6 +28,29 @@
         //"preLaunchTask": "C/C++: clang++ build active file"
       },
       {
+        "name": "C/C++: g++-12 kmeans 1th mouse Yarne",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/Users/yarne/Documents/Github/INF-PDS-Project/FinaleVersie/kmeans",
+        "args": [
+            "--input", "/Users/yarne/Documents/datasets/mouse_500x2.csv",
+            "--output", "output/mouse.csv",
+            "--repetitions", "10",
+            "--k", "3",
+            //"--threads", "1",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        //"preLaunchTask": "gmake",
+        //"preLaunchTask": "C/C++: clang++ build active file"
+      },
+      {
         "name": "C/C++: g++-12 kmeans 8th mouse",
         "type": "cppdbg",
         "request": "launch",
@@ -35,8 +58,8 @@
         "args": [
             "--input", "datasets/mouse_500x2.csv",
             "--output", "output/mouse.csv",
-            "--repetitions", "5",
-            "--k", "5",
+            "--repetitions", "10",
+            "--k", "3",
             "--threads", "8",
             //"--centroidtrace", "output/centroidtrace.csv",
             //"--trace", "output/clustertrace.csv",
