@@ -249,16 +249,17 @@ void choose_centroids_at_random(const int numClusters, const int dimension, Rng 
 		for (size_t cluster = 0; cluster < numClusters; cluster++) {
 			const int whichCluster = cluster * dimension;
 			for (size_t whichCoordinate = 0; whichCoordinate < dimension; whichCoordinate++) {
-				centroids[whichRep + whichCluster + whichCoordinate] = allPoints[indices[cluster] + whichCoordinate];
-        // printf("%d\n", indices[whichCoordinate]);
+				centroids[whichRep + whichCluster + whichCoordinate] = allPoints[indices[cluster] * dimension + whichCoordinate];
+        printf("%f\n", allPoints[indices[cluster]*dimension + whichCoordinate]);
+        // printf("%d\n", indices[cluster]*dimension);
       }
 		}
 	}
 
-	// for (size_t i = 0; i < 10 ; i++)
+	// for (size_t i = 0; i < allPoints.size() ; i++)
 	// {
-	//   // printf("%f\n", allPoints[i]);
-  //   printf("%f\n", centroids[i]);
+	  // printf("%f\n", allPoints[i]);
+    // printf("%f\n", centroids[i]);
 	// }
 	
 }
