@@ -39,6 +39,8 @@
 			int whichCentroid = c * dimension;
 			currentdist += pow((p[i] - centroids[offset + whichCentroid + i]), 2);
 			printf("%f\n", currentdist);
+			printf("%f\n", p[i]);
+			printf("%f\n", centroids[offset + whichCentroid + i]);
 		}
 
 		if (dist == 0)
@@ -72,7 +74,7 @@ TODO:
 	const int threadRange,
 	const int numClusters,
 	double* distanceSquaredSum,
-	bool* changed, 
+	bool* cuChanged, 
 	const int dimension)
 {
 	/*
@@ -91,23 +93,20 @@ TODO:
 		ex: blockIdx = *, blockDim = len(*), threadIdx = 3, threadRange = len({...})
 	*/
 
-	*changed = false;
+	*cuChanged = false;
 	int start = 0; // blockIdx.x * blockDim.x  + (threadIdx.x * threadRange)
 	int stop = start + threadRange;
-	for (int p = start; p < stop; ++p)
+	for (int p = start; p < 8; ++p)
 	{
-		double dist = 0.0;
-		
-		const int newCluster = 9;
-    	std::cout << p;
-		// const int newCluster = find_closest_centroid_index_and_distance(dist, &cuPoints[p], cuCentroids, numClusters, centroidOffset, dimension);
+		double dist = 0;
+		const int newCluster = find_closest_centroid_index_and_distance(dist, &cuPoints[p], cuCentroids, numClusters, centroidOffset, dimension);
 		//*distanceSquaredSum += dist; // REDUCTION
 
-		// if (newCluster != cuClusters[clusterOffset + p])
-		// {
-		// 	cuClusters[clusterOffset + p] = newCluster;
-		// 	*changed = true;
-		// }
+		if (newCluster != cuClusters[clusterOffset + p])
+		{
+			cuClusters[clusterOffset + p] = newCluster;
+			*cuChanged = true;
+		}
 	}
 }
 
@@ -484,10 +483,10 @@ int kmeans(Rng &rng,
 	double distanceSquaredSum = 0.0;
 
 	// CUDA: CPU -> GPU allocation
-	int *cuClustersPointer;                       //= &clusters[0];
-	double *cuCentroidsPointer, *cuPointsPointer;  //= &centroids[0]; //point *cuPointsPointer = &allPoints[0];
-	bool *cuChangedPointer;                        //= &changed;
-	double *cuDistanceSquaredSumPointer;          // = &distanceSquaredSum[0];
+	int *cuClustersPointer= &clusters[0];
+	double *cuCentroidsPointer, *cuPointsPointer= &centroids[0]; //point *cuPointsPointer = &allPoints[0];
+	bool *cuChangedPointer= &changed;
+	double *cuDistanceSquaredSumPointer = &distanceSquaredSum;
 
 	size_t sizeOfClusters = numPoints * repetitions * sizeof(int);
 	size_t sizeOfCentroids = numClusters * repetitions * dimension * sizeof(double);
@@ -523,9 +522,9 @@ int kmeans(Rng &rng,
 			bestDistSquaredSum,
 			bestClusterOffset,
 			cuCentroidsPointer,				 	// CUDA centroids pointer
-			numClusters * r * dimension, 					// centroids internal offset for this rep
+			numClusters * r, 					// centroids internal offset for this rep
 			cuClustersPointer,				 	// CUDA clusters pointer
-			numPoints * r * dimension,						//
+			numPoints * r ,						//
 			cuPointsPointer,
 			cuChangedPointer,
 			cuDistanceSquaredSumPointer,
