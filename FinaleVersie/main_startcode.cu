@@ -27,7 +27,7 @@ __global__ void updateCentroids(){
 	@post dist is the distance to the closest centroid
 	@return the index of the closest centroid
 */
-int find_closest_centroid_index_and_distance(double &dist, point &p, point *centroids, const int numClusters, const size_t offset)
+__device__ int find_closest_centroid_index_and_distance(double &dist, point &p, point *centroids, const int numClusters, const size_t offset)
 {
 	point closestCentroid;
 	int indexCentroid;
@@ -38,7 +38,7 @@ int find_closest_centroid_index_and_distance(double &dist, point &p, point *cent
 		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
 
-		if (dist == std::numeric_limits<double>::max())
+		if (dist == 0)
 		{
 			closestCentroid = centroids[offset + c];
 			dist = currentdist;
@@ -91,7 +91,7 @@ __global__ void assignNewClusters(
 	int stop = start + threadRange;
 	for (int p = start; p < stop; ++p)
 	{
-		double dist = std::numeric_limits<double>::max();
+		double dist = 0;
 		const int newCluster = find_closest_centroid_index_and_distance(dist, cuPoints[p], cuCentroids, numClusters, centroidOffset);
 		*distanceSquaredSum += dist; // REDUCTION
 
@@ -355,7 +355,8 @@ int kmeansReps(double &bestDistSquaredSum,
 		int surplusBlocks = numPoints % numBlocks;
 		int threadRange = floor(blockRange / numThreads);
 		int surplusThreads = blockRange % numThreads;
-		assignNewClusters(	cuClusters, 
+		assignNewClusters<<<blockRange,threadRange>>>(	
+              cuClusters, 
 							clusterOffset, 
 							cuCentroids, 
 							centroidOffset, 
@@ -363,9 +364,10 @@ int kmeansReps(double &bestDistSquaredSum,
 							threadRange, 
 							numClusters, 
 							cuDistanceSquaredSum, 
-							cuChanged	);
+							cuChanged	
+              );
 
-		cudaMemcpy(changed, &cuChanged, sizeof(bool), cudaMemcpyDeviceToHost)
+		cudaMemcpy(&changed, cuChanged, sizeof(bool), cudaMemcpyDeviceToHost);
 
 		// if (debugClusters)
 		// 	debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);
@@ -461,16 +463,15 @@ int kmeans(Rng &rng,
 	double distanceSquaredSum = 0.0;
 
 	// CUDA: CPU -> GPU allocation
-	int *cuClustersPointer = &clusters[0];
-	point *cuCentroidsPointer = &centroids[0];
-	point *cuPointsPointer = &allPoints[0];
-	bool *cuChangedPointer = &changed;
-	double *cuDistanceSquaredSumPointer = &distanceSquaredSum;
+	int *cuClustersPointer;                       //= &clusters[0];
+	point *cuCentroidsPointer, *cuPointsPointer;  //= &centroids[0]; //point *cuPointsPointer = &allPoints[0];
+	bool *cuChangedPointer;                        //= &changed;
+	double *cuDistanceSquaredSumPointer;          // = &distanceSquaredSum[0];
 
 	size_t sizeOfClusters = numPoints * repetitions * sizeof(int);
 	size_t sizeOfCentroids = numClusters * repetitions * sizeof(point);
 	size_t sizeOfPoints = numPoints * sizeof(point);
-	size_t sizeOfChanged = repetitions * sizeof(bool);
+	size_t sizeOfChanged = sizeof(bool);
 	size_t sizeOfDistanceSquaredSum = repetitions * sizeof(double);
 
 
@@ -483,7 +484,7 @@ int kmeans(Rng &rng,
 	cudaMemcpy(cuClustersPointer, clusters.data(), sizeOfClusters, cudaMemcpyHostToDevice);
 	cudaMemcpy(cuCentroidsPointer, centroids.data(), sizeOfCentroids, cudaMemcpyHostToDevice);
 	cudaMemcpy(cuPointsPointer, allPoints.data(), sizeOfPoints, cudaMemcpyHostToDevice);
-	cudaMemcpy(cuChangedPointer, changed.data(), sizeOfChanged, cudaMemcpyHostToDevice);
+	cudaMemcpy(cuChangedPointer, &changed, sizeOfChanged, cudaMemcpyHostToDevice);
 	cudaMemcpy(cuDistanceSquaredSumPointer, distanceSquaredSum.data(), sizeOfDistanceSquaredSum, cudaMemcpyHostToDevice);
 
 	// Do the k-means routine a number of times, each time starting from
