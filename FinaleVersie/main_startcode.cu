@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdlib>
 #include <math.h> /* floor */
+#include <cuda.h>
 
 #include "CSVReader.hpp"
 #include "CSVWriter.hpp"
@@ -12,6 +13,10 @@
 #include <algorithm>
 
 /* CUDA KERNELS */
+__global__ void updateCentroids(){
+
+}
+
 
 /*
 	Find the closest centroids index and distance for a given point
@@ -298,8 +303,6 @@ void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centro
 	centroidDebugFile.write(centroid, dimension);
 	centroidDebugFile.close();
 }
-
-
 
 /*
 	Does a kmeans run
