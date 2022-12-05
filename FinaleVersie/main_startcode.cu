@@ -179,7 +179,7 @@ Arguments:
 
 // Helper function to read input file into allData, setting number of detected
 // rows and columns. Feel free to use, adapt or ignore
-void readData(std::ifstream &input, std::vector<point> &allData, size_t &numRows, size_t &numCols)
+void readData(std::ifstream &input, std::vector<double> &allData, size_t &numRows, size_t &numCols)
 {
 	if (!input.is_open())
 		throw std::runtime_error("Input file is not open");
@@ -204,17 +204,13 @@ void readData(std::ifstream &input, std::vector<point> &allData, size_t &numRows
 		else if (numColsExpected != (int)row.size())
 			throw std::runtime_error("Incompatible number of colums read in line " + std::to_string(line) + ": expecting " + std::to_string(numColsExpected) + " but got " + std::to_string(row.size()));
 
-		point p{}; // Load in every Point (N dimensions) into a point struct
 		for (auto x : row)
-		{
-			p.addDataPoint(x);
-		}
-		allData.push_back(p);
+			allData.push_back(x);
 
 		line++;
 	}
 
-	numRows = (size_t)allData.size();
+	numRows = (size_t)allData.size()/numColsExpected;
 	numCols = (size_t)numColsExpected;
 }
 
@@ -242,15 +238,26 @@ FileCSVWriter openDebugFile(const std::string &n)
 	@pre centroids vector is empty
 	@post centroids is filled with random points
 */
-void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<point> &centroids, const int repetitions, std::vector<point> &allPoints)
+void choose_centroids_at_random(const int numClusters, const int dimension, Rng &rng, std::vector<double> &centroids, const int repetitions, std::vector<double> &allPoints)
 {
 	for (int rep = 0; rep < repetitions; ++rep)
 	{
 		std::vector<size_t> indices(numClusters);
 		rng.pickRandomIndices(allPoints.size(), indices);
-		for (size_t i = 0; i < numClusters; i++)
-			centroids[numClusters * rep + i] = allPoints[indices[i]];
+		const int whichRep = numClusters * rep; 
+		for (size_t cluster = 0; cluster < numClusters; cluster++) {
+			const int i = cluster * dimension;
+			for (size_t whichCoordinate = 0; whichCoordinate < dimension; whichCoordinate++) {
+				centroids[whichRep + i + whichCoordinate] = allPoints[indices[cluster] + whichCoordinate];
+			}
+		}
 	}
+
+	for (size_t i = 0; i < 10 ; i++)
+	{
+		printf("%d", centroids[i]);
+	}
+	
 }
 
 /*
@@ -367,18 +374,18 @@ int kmeansReps(double &bestDistSquaredSum,
 							cuChanged	
               );
 
-		cudaMemcpy(&changed, cuChanged, sizeof(bool), cudaMemcpyDeviceToHost);
+		//cudaMemcpy(&changed, cuChanged, sizeof(bool), cudaMemcpyDeviceToHost);
 
 		// if (debugClusters)
 		// 	debugCluster.insert(debugCluster.end(), &clusters[0], &clusters[numPoints]);
 		// if (debugCentroids)
 		// {
-		// 	for (size_t j = 0; j < numClusters; j++)
+		// 	for (size_t whichCoordinate = 0; whichCoordinate < numClusters; whichCoordinate++)
 		// 	{
 		// 		if (debugCentroids)
 		// 		{
 		// 			for (size_t i = 0; i < allPoints[0].getSize(); i++)
-		// 				debugCentroid.push_back(centroids[j].getDataPoint(i));
+		// 				debugCentroid.push_back(centroids[whichCoordinate].getDataPoint(i));
 		// 		}
 		// 	}
 		// }
@@ -387,8 +394,8 @@ int kmeansReps(double &bestDistSquaredSum,
 		if (*cuChanged)
 		{
 			// CUDA: Wordt Cuda kernel
-			for (size_t j = 0; j < numClusters; ++j)
-				cuCentroids[centroidOffset + j] = average_of_points_with_cluster(j, cuClusters, clusterOffset, cuPoints, numPoints);
+			for (size_t whichCoordinate = 0; whichCoordinate < numClusters; ++whichCoordinate)
+				cuCentroids[centroidOffset + whichCoordinate] = average_of_points_with_cluster(whichCoordinate, cuClusters, clusterOffset, cuPoints, numPoints);
 		}
 
 		if (*cuDistanceSquaredSum < bestDistSquaredSum)
@@ -426,7 +433,7 @@ int kmeans(Rng &rng,
 
 	static size_t numPoints = 0; // Will reset in the readData function anyways = rows
 	static size_t dimension = 0; // Will reset in the readData function anyways = cols
-	std::vector<point> allPoints{};
+	std::vector<double> allPoints{};
 	std::ifstream infile(inputFile);
 	readData(infile, allPoints, numPoints, dimension);
 
@@ -451,9 +458,9 @@ int kmeans(Rng &rng,
 	 * abstract example: [p1, p2, p3 | p1, p2, p3]
 	 * here are 3 centroids for 3 repetitions made
 	 */
-	std::vector<point> centroids(numClusters * repetitions);
+	std::vector<double> centroids(numClusters * repetitions * dimension);
 
-	choose_centroids_at_random(numClusters, rng, centroids, repetitions, allPoints);
+	choose_centroids_at_random(numClusters, dimension, rng, centroids, repetitions, allPoints);
 
 	double bestDistSquaredSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<size_t> stepsPerRepetition(repetitions);			// to save the number of steps each rep needed
@@ -485,7 +492,7 @@ int kmeans(Rng &rng,
 	cudaMemcpy(cuCentroidsPointer, centroids.data(), sizeOfCentroids, cudaMemcpyHostToDevice);
 	cudaMemcpy(cuPointsPointer, allPoints.data(), sizeOfPoints, cudaMemcpyHostToDevice);
 	cudaMemcpy(cuChangedPointer, &changed, sizeOfChanged, cudaMemcpyHostToDevice);
-	cudaMemcpy(cuDistanceSquaredSumPointer, distanceSquaredSum.data(), sizeOfDistanceSquaredSum, cudaMemcpyHostToDevice);
+	cudaMemcpy(cuDistanceSquaredSumPointer, &distanceSquaredSum, sizeOfDistanceSquaredSum, cudaMemcpyHostToDevice);
 
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
