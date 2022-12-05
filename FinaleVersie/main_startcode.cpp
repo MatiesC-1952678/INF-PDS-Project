@@ -153,8 +153,12 @@ void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<poi
 	for(int rep = 0; rep < repetitions; ++rep) {
 		std::vector<size_t> indices(numClusters);
 		rng.pickRandomIndices(allPoints.size(), indices);
-		for (size_t i = 0; i < numClusters; i++)
-			centroids[numClusters*rep + i] = allPoints[indices[i]];
+		for (size_t cluster = 0; cluster < numClusters; cluster++) {
+			centroids[numClusters*rep + cluster] = allPoints[indices[cluster]];
+			// printf("index %d\n", indices[cluster]);
+			// printf("centroids1 %f\n", allPoints[indices[cluster]].getDataPoint(0));
+			// printf("centroids2 %f\n", allPoints[indices[cluster]].getDataPoint(1));
+		}
 	}
 }
 
@@ -168,7 +172,7 @@ void choose_centroids_at_random(const int numClusters, Rng &rng, std::vector<poi
 	@post dist is the distance to the closest centroid
 	@return the index of the closest centroid
 */
-int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<point> &centroids, const int numClusters, const size_t offset)
+int find_closest_centroid_index_and_distance(double &dist, point &p, std::vector<point> &centroids, const int numClusters, const size_t offset)
 {
 	point closestCentroid;
 	int indexCentroid;
@@ -176,9 +180,12 @@ int find_closest_centroid_index_and_distance(float &dist, point &p, std::vector<
 	{
 		double currentdist = 0;
 
-
-		for (size_t i = 0; i < p.getSize(); ++i) // p.getSize() or dimension = N
+		for (size_t i = 0; i < p.getSize(); ++i) {// p.getSize() or dimension = N
 			currentdist += pow((p.getDataPoint(i) - centroids[offset + c].getDataPoint(i)), 2);
+			// printf("%d: %f\n",c, currentdist);
+			//printf("p: %f\n", p.getDataPoint(i));
+			// printf("c: %f\n", centroids[offset + c].getDataPoint(i));
+		}
 
 		if (dist == std::numeric_limits<double>::max())
 		{
@@ -213,7 +220,10 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 		if (clusters[clusterOffset + i] == centroidIndex)
 		{
 			avgPoint.add(allPoints[i]);
+			//printf("%f\n", avgPoint.getDataPoint(0));
+			//printf("%f\n", avgPoint.getDataPoint(1));
 			numberOfPoints++;
+			//printf("--- number of points %d\n",numberOfPoints);
 		}
 	}
 
@@ -288,11 +298,11 @@ int kmeansReps(double &bestDistSquaredSum,
 	{
 		steps++;
 		changed = false;
-		float distanceSquaredSum = 0;
+		double distanceSquaredSum = 0;
 
 		for (int p = 0; p < numPoints; ++p)
 		{
-			float dist = std::numeric_limits<float>::max();
+			double dist = std::numeric_limits<double>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, allPoints[p], centroids, numClusters, centroidOffset);
 			distanceSquaredSum += dist;
 
@@ -316,8 +326,12 @@ int kmeansReps(double &bestDistSquaredSum,
 
 		if (changed)
 		{
-			for (size_t j = 0; j < numClusters; ++j)
+			for (size_t j = 0; j < numClusters; ++j) {
 				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
+				//printf("--- centroids \n%f\n", centroids[centroidOffset + j].getDataPoint(0));
+				//printf("%f\n", centroids[centroidOffset + j].getDataPoint(1));
+
+			}
 		}
 
 		if (distanceSquaredSum < bestDistSquaredSum)
@@ -326,6 +340,7 @@ int kmeansReps(double &bestDistSquaredSum,
 			bestDistSquaredSum = distanceSquaredSum;
 		}
 
+		//exit(0);
 	}
 
 	if(debugClusters)
