@@ -1,0 +1,126 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "C/C++: g++-12 kmeans 1th mouse",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/Users/matiesclaesen/Documents/repos/inf-project/FinaleVersie/kmeans",
+        "args": [
+            "--input", "/Users/matiesclaesen/Documents/datasets/mouse_500x2.csv",
+            "--output", "FinaleVersie/output/mouse.csv",
+            "--repetitions", "10",
+            "--k", "3",
+            //"--threads", "1",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        "preLaunchTask": "gmake",
+        //"preLaunchTask": "C/C++: clang++ build active file"
+      },
+      {
+        "name": "C/C++: g++-12 kmeans 1th mouse Yarne",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/Users/yarne/Documents/Github/INF-PDS-Project/FinaleVersie/kmeans",
+        "args": [
+            "--input", "/Users/yarne/Documents/datasets/mouse_500x2.csv",
+            "--output", "output/mouse.csv",
+            "--repetitions", "10",
+            "--k", "3",
+            //"--threads", "1",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        "preLaunchTask": "make",
+        //"preLaunchTask": "C/C++: clang++ build active file"
+      },
+      {
+        "name": "C/C++: g++-12 kmeans 8th mouse",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
+        "args": [
+            "--input", "datasets/mouse_500x2.csv",
+            "--output", "output/mouse.csv",
+            "--repetitions", "10",
+            "--k", "3",
+            "--threads", "8",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        "preLaunchTask": "gmake",
+        //"preLaunchTask": "C/C++: clang++ build active file"
+      },
+      {
+        "name": "C/C++: g++-12 kmeans 1M 1 thread",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
+        "args": [
+            "--input", "datasets/1M_1000000x4.csv",
+            "--output", "output/1M.csv",
+            "--repetitions", "3",
+            "--k", "2",
+            "--threads", "1",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        "preLaunchTask": "gmake",
+        //"preLaunchTask": "C/C++: clang++ build active file"
+      },
+      {
+        "name": "C/C++: g++-12 kmeans 100k 8 threads",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/Users/matiesclaesen/Documents/inf-project/FinaleVersie/kmeans",
+        "args": [
+            "--input", "datasets/100000x5.csv",
+            "--output", "output/100k.csv",
+            "--repetitions", "3",
+            "--k", "2",
+            "--threads", "4",
+            //"--centroidtrace", "output/centroidtrace.csv",
+            //"--trace", "output/clustertrace.csv",
+            "--seed", "1952226"
+        ],
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "lldb",
+        "preLaunchTask": "gmake",
+        //"preLaunchTask": "C/C++: clang++ build active file"
+      }
+    ]
+  }
+
+  //2.60025e+13
+//4.25164

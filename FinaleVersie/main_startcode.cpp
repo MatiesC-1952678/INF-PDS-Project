@@ -12,9 +12,9 @@
 #include <algorithm>
 
 /* CUDA KERNELS */
-// __global__ void updateCentroids(){
+__global__ void updateCentroids(){
 
-// }
+}
 
 /*
 	Find the closest centroids index and distance for a given point
