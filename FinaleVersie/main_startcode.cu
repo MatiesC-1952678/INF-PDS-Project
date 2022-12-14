@@ -39,10 +39,10 @@ __global__ void average_of_points_with_cluster(
 			for (size_t i = 0; i < dimension; i++)
 			{
 				avgPoint[p * dimension + i] += allPoints[p * dimension + i];
-				printf("%d: %f\n",p * dimension + i, avgPoint[p * dimension + i]);
+				//printf("%d: %f\n",p * dimension + i, avgPoint[p * dimension + i]);
 			}
 			numberOfPoints[p]++;
-			printf("--- number of points  %d\n", numberOfPoints[p]);
+			//printf("--- number of points  %d\n", numberOfPoints[p]);
 		}
 	}
 }
@@ -389,8 +389,8 @@ int kmeansReps(double &bestDistSquaredSum,
 	// std::vector<double> debugCluster{};
 	// std::vector<double> debugCentroid{};
 
-	 //while (*cuChanged)
-	 //{
+	while (*cuChanged && steps < 3)
+	{
     
 		steps++;
 		*cuChanged = false;
@@ -457,9 +457,8 @@ int kmeansReps(double &bestDistSquaredSum,
 		{
 			// memCopy 1 average point
 			//  CUDA: Wordt Cuda kernel
-			// for (size_t cluster = 0; cluster < numClusters; ++cluster)
-			// {
-				int cluster = 0;
+			for (size_t cluster = 0; cluster < numClusters; ++cluster)
+			{
 				int threads = 1024;
 				const size_t sizeOfAveragePoints = threads * dimension * sizeof(double);
 				std::vector<double> averagePoints(threads * dimension, 0.0);
@@ -498,7 +497,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				// std::cout << avgPoint.getDataPoint(0);
 				for (int i = 0; i < dimension; i++) {
 					averagePoint[i] /= numberOf;
-					printf("%d: numpoints: %d result: %f\n",i, numberOf, averagePoint[i]);
+					//printf("%d: numpoints: %d result: %f\n",i, numberOf, averagePoint[i]);
 				}
 
 				std::vector<double> centroid(dimension, 0.0);
@@ -517,7 +516,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				}
 
 				cudaMemcpy(&cuCentroids[cluster], centroid.data(), sizeOfCentroid, cudaMemcpyHostToDevice);
-			//}
+			}
 		}
 
 		
@@ -529,7 +528,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		// }
 
 		//exit(0);
-	//}
+	}
 
 	// if (debugClusters)
 	// 	writeClusterToDebugFile(debugCluster, clustersDebugFile, numPoints);
