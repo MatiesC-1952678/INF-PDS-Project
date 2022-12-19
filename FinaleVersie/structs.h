@@ -42,4 +42,11 @@ struct point
 		for (size_t i = 0; i < datapoints.size(); i++)
 			datapoints[i] /= divider;
 	}
+
+	void print() 
+	{
+		for (size_t i = 0; i < datapoints.size(); i++)
+			printf("%f\n", datapoints[i]);
+			
+	}
 };

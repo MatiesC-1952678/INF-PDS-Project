@@ -228,7 +228,7 @@ point average_of_points_with_cluster(const size_t centroidIndex, const std::vect
 	}
 
 	//std::cout << avgPoint.getDataPoint(0) << std::endl;
-
+	avgPoint.print();
 	avgPoint.divide(numberOfPoints);
 	return avgPoint;
 }
@@ -327,7 +327,9 @@ int kmeansReps(double &bestDistSquaredSum,
 		if (changed)
 		{
 			for (size_t j = 0; j < numClusters; ++j) {
-				centroids[centroidOffset + j] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
+				point temp = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints);
+				temp.print();
+				centroids[centroidOffset + j] = temp;
 				//printf("--- centroids \n%f\n", centroids[centroidOffset + j].getDataPoint(0));
 				//printf("%f\n", centroids[centroidOffset + j].getDataPoint(1));
 

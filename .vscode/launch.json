@@ -8,7 +8,7 @@
         "name": "C/C++: g++-12 kmeans 1th mouse",
         "type": "cppdbg",
         "request": "launch",
-        "program": "/Users/matiesclaesen/Documents/repos/inf-project/FinaleVersie/kmeans",
+        "program": "/Users/matiesclaesen/Documents/repos/inf-project-serial/FinaleVersie/kmeans",
         "args": [
             "--input", "/Users/matiesclaesen/Documents/datasets/mouse_500x2.csv",
             "--output", "FinaleVersie/output/mouse.csv",
