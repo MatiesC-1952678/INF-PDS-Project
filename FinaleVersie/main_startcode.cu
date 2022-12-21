@@ -78,13 +78,12 @@ __global__ void average_of_points_with_cluster(
 	const int numPoints,
 	const int dimension,
 	const int threadRange,
-	int* numberOfPoints
+	int* numberOfPoints,
+	bool print
 	)
 {
 	int start = (blockIdx.x * blockDim.x * threadRange) + (threadIdx.x * threadRange);
-	int stop = start + threadRange;
 	int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
-	int counter = 0;
 
 	if (start < numPoints) {
 		for (int point = 0; point < threadRange; ++point) {
@@ -104,6 +103,8 @@ __global__ void average_of_points_with_cluster(
 					}
 					numberOfPoints[threadIndex]++;
 					//printf("--- number of points  %d\n", numberOfPoints[p]);
+					// if (print)
+					// 	printf("avgPoint[%d]: %f\n", threadIndex * dimension + 0, avgPoint[threadIndex * dimension + 0]);
 				}
 			}
 		}
@@ -145,9 +146,7 @@ __global__ void assignNewClusters(
 )
 {
 	// printf("block id: %d - grid dim: %d - block dim %d\n", blockIdx.x, gridDim.x, blockDim.x );
-	int threadAmount = 32;
 	int start = (blockIdx.x * blockDim.x * threadRange) + (threadIdx.x * threadRange);
-	int stop = start + threadRange;
 	int distIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	//printf("distIndex %d\n", distIndex);
 	//printf("distIndex: %d\n", distIndex);
@@ -403,7 +402,7 @@ int kmeansReps(double &bestDistSquaredSum,
 	int steps = 0;
 	// std::vector<double> debugCluster{};
 	// std::vector<double> debugCentroid{};
-	int threadRange = 16;//std::ceil((double) numPoints / (numBlocks * numThreads));
+	int threadRange = std::ceil((double) numPoints / (numBlocks * numThreads));
 	//printf("numPoints: %d - numBlocks: %d - numThreads: %d - threadRange: %d\n", (int) numPoints, numBlocks, numThreads, threadRange);
 
 	while (*cuChanged)
@@ -438,14 +437,25 @@ int kmeansReps(double &bestDistSquaredSum,
 			print
     	);
 		cudaDeviceSynchronize();
+
+		// if (steps == 1) {
+		// 	for (size_t cluster = 0; cluster < numClusters; ++cluster) {
+		// 		std::vector<double> centroid(dimension, 0.0);
+		// 		size_t sizeOfCentroid = sizeof(double)*dimension;
+		// 		cudaMemcpy(centroid.data(), &cuCentroids[centroidOffset + cluster*dimension], sizeOfCentroid, cudaMemcpyDeviceToHost);
+		// 		for (int i = 0; i < dimension; i++)
+		// 			printf("%f\n",centroid[i]);
+		// 	}
+		// }
+
 		cudaMemcpy(distanceSquaredSums.data(), cuDistanceSquaredSumsPointer, sizeOfDistanceSquaredSums, cudaMemcpyDeviceToHost);
 		double total = 0.0;
 		for (int i = 0; i < distanceSquaredSums.size(); i++) {
 			//printf("%d: %f\n",i,distanceSquaredSums[i]);
 			total += distanceSquaredSums[i];
 		}
-		printf("--------------------- total: %f\n", total);
 		distanceSquaredSum = total;
+		printf("%d total: %f\n",steps, distanceSquaredSum);
 
 
 		cudaFree(cuDistanceSquaredSumsPointer);
@@ -471,7 +481,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		{
 			// memCopy 1 average point
 			//  CUDA: Wordt Cuda kernel
-			//printf("%d\n",numClusters);
+			// printf("===\ncalc averages\n");
 			for (size_t cluster = 0; cluster < numClusters; ++cluster)
 			{
 				int threadCount = numBlocks * numThreads; //32 * 32
@@ -487,7 +497,7 @@ int kmeansReps(double &bestDistSquaredSum,
 				cudaMalloc(&cuNumberOfPointsPointer, sizeOfNumberOfPoints);
 				cudaMemcpy(cuNumberOfPointsPointer, numberOfPoints.data(), sizeOfNumberOfPoints, cudaMemcpyHostToDevice);
 
-				average_of_points_with_cluster<<<numBlocks,numThreads>>>(cuAveragePointsPointer, cluster, cuClusters, clusterOffset, cuPoints, numPoints, dimension, threadRange, cuNumberOfPointsPointer);
+				average_of_points_with_cluster<<<numBlocks,numThreads>>>(cuAveragePointsPointer, cluster, cuClusters, clusterOffset, cuPoints, numPoints, dimension, threadRange, cuNumberOfPointsPointer, steps == 2);
 				cudaDeviceSynchronize();
 
 				cudaMemcpy(averagePoints.data(), cuAveragePointsPointer, sizeOfAveragePoints, cudaMemcpyDeviceToHost);
@@ -516,7 +526,7 @@ int kmeansReps(double &bestDistSquaredSum,
 
 				std::vector<double> centroid(dimension, 0.0);
 				size_t sizeOfCentroid = sizeof(double)*dimension;
-				cudaMemcpy(centroid.data(), &cuCentroids[cluster*dimension], sizeOfCentroid, cudaMemcpyDeviceToHost);
+				cudaMemcpy(centroid.data(), &cuCentroids[centroidOffset + cluster*dimension], sizeOfCentroid, cudaMemcpyDeviceToHost);
 				//printf("--- centroids \n");
 				for (int i = 0; i < dimension; i++)
 				{
@@ -526,10 +536,10 @@ int kmeansReps(double &bestDistSquaredSum,
 					// printf("let's try cucentroinds\n");
 					// printf("%f\n",cuCentroids[0]);
 					centroid[i] = averagePoint[i];
-					//printf("%f\n",centroid[i]);
+					// printf("%f\n",centroid[i]);
 				}
 
-				cudaMemcpy(&cuCentroids[cluster*dimension], centroid.data(), sizeOfCentroid, cudaMemcpyHostToDevice);
+				cudaMemcpy(&cuCentroids[centroidOffset + cluster*dimension], centroid.data(), sizeOfCentroid, cudaMemcpyHostToDevice);
 			}
 		}
 
@@ -546,6 +556,8 @@ int kmeansReps(double &bestDistSquaredSum,
 	// 	writeClusterToDebugFile(debugCluster, clustersDebugFile, numPoints);
 	// if (debugCentroids)
 	// 	writeCentroidToDebugFile(debugCentroid, centroidDebugFile, allPoints[0].getSize());
+
+	printf("\n");
 
 	return steps;
 }
@@ -609,11 +621,10 @@ int kmeans(Rng &rng,
 	bool changed = true;
 
 	// CUDA: CPU -> GPU allocation
-	int *cuClustersPointer; 				//= clusters.data();
+	int *cuClustersPointer; 				// = clusters.data();
 	double *cuCentroidsPointer; 			// = &centroids[0];
 	double *cuPointsPointer; 				// = &allPoints[0];
 	bool* cuChangedPointer; 				// = &changed;
-	double *cuDistanceSquaredSumPointer; 	// = &distanceSquaredSum;
 
 	size_t sizeOfClusters = numPoints * repetitions * sizeof(int);
 	size_t sizeOfCentroids = numClusters * repetitions * dimension * sizeof(double);
@@ -636,9 +647,11 @@ int kmeans(Rng &rng,
 
 	for (int r = 0; r < repetitions; r++)
 	{
-		size_t numSteps = 0;
+		//size_t numSteps = 0;
 
 		// printf("Rep - Thread %d\n", 5);
+
+		*cuChangedPointer = true;
 
 		// if (centroidDebugFileName.length() > 0 && clusterDebugFileName.length() > 0 && r == 0) {
 		stepsPerRepetition[r] = kmeansReps(
@@ -675,7 +688,6 @@ int kmeans(Rng &rng,
 	cudaFree(cuCentroidsPointer);
 	cudaFree(cuPointsPointer);
 	cudaFree(cuChangedPointer);
-	cudaFree(cuDistanceSquaredSumPointer);
 
 	// Some example output, of course you can log your timing data anyway you like.
 	std::cerr << "# Type,blocks,threads,file,seed,clusters,repetitions,bestdistsquared,timeinseconds" << std::endl;

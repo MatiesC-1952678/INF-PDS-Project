@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "C/C++: g++-12 kmeans 1th mouse",
+        "name": "C/C++: g++-12 kmeans mouse",
         "type": "cppdbg",
         "request": "launch",
         "program": "${workspaceFolder}/FinaleVersie/kmeans",
