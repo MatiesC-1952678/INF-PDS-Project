@@ -455,7 +455,7 @@ int kmeansReps(double &bestDistSquaredSum,
 			total += distanceSquaredSums[i];
 		}
 		distanceSquaredSum = total;
-		printf("%d total: %f\n",steps, distanceSquaredSum);
+		//printf("%d total: %f\n",steps, distanceSquaredSum);
 
 
 		cudaFree(cuDistanceSquaredSumsPointer);
@@ -557,7 +557,7 @@ int kmeansReps(double &bestDistSquaredSum,
 	// if (debugCentroids)
 	// 	writeCentroidToDebugFile(debugCentroid, centroidDebugFile, allPoints[0].getSize());
 
-	printf("\n");
+	// printf("\n");
 
 	return steps;
 }
