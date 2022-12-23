@@ -7,9 +7,9 @@
 #FLAGS=-O3 -DNDEBUG -std=c++14
 
 # Settings for a debug build
-FLAGS=-g -std=c++14
+FLAGS=-std=c++14 -gencode arch=compute_75,code=sm_75 
 
-CXX = g++-12
+NVCC=nvcc
 
 all: kmeans
 
@@ -17,4 +17,4 @@ clean:
 	rm -f kmeans
 
 kmeans: main_startcode.cpp rng.cpp
-	$(CXX) $(FLAGS)  -o kmeans main_startcode.cpp rng.cpp
+	$(NVCC) $(FLAGS)  -o kmeans main_startcode.cpp rng.cpp
