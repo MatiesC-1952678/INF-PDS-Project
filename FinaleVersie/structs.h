@@ -1,14 +1,14 @@
 #pragma once
 #include <vector>
 #include <stdio.h>
+#include <memory>
 
-// TODO@yarne: maybe put this in a seperate file (like my structs.h file)
 struct point
 {
 	std::vector<double> datapoints;
 
 	point() {
-		datapoints = std::vector<double>{};
+		datapoints = std::vector<double>();
 	};
 
 	~point(){};
@@ -41,5 +41,9 @@ struct point
 	{
 		for (size_t i = 0; i < datapoints.size(); i++)
 			datapoints[i] /= divider;
+	}
+
+	double* toDoubleArray(){
+		return datapoints.data();
 	}
 };
