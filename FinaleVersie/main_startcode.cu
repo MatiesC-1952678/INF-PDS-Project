@@ -69,7 +69,7 @@ __device__ int find_closest_centroid_index_and_distance(bool print, int pointInd
 	@param allPoints: all the points from the input file
 	@return the average point from the cluster
 */
-__global__ void average_of_points_with_cluster(
+__global__ void average_of_points_with_cluster_CUDA(
 	double *avgPoint,
 	const size_t centroidIndex,
 	int *cuClusters,
@@ -109,6 +109,45 @@ __global__ void average_of_points_with_cluster(
 			}
 		}
 	}
+}
+
+/*
+	Average of all points from a given cluster
+	@param centroidIndex: the index of the centroid
+	@param clusters: vector with the closest centroid per point
+	@param clusterOffset: the offset in the cluster vector to seperate repetitions
+	@param allPoints: all the points from the input file
+	@return the average point from the cluster
+*/
+std::vector<double> average_of_points_with_cluster(
+	const int centroidIndex,
+	int *clusters,
+	const size_t clusterOffset,
+	double *allPoints,
+	const int numPoints,
+	const int dimension)
+{
+	std::vector<double> avgPoint(dimension, 0);
+	int numberOfPoints = 0;
+	for (size_t p = 0; p < numPoints; p++)
+	{
+		if (clusters[clusterOffset + p] == centroidIndex)
+		{
+			for (size_t i = 0; i < dimension; i++)
+			{
+				//printf("i: %d", (int) i);
+				avgPoint[i] += allPoints[p * dimension + i];
+				//printf("%f\n", avgPoint[i]);
+			}
+			numberOfPoints++;
+			//printf("--- number of points  %d\n", numberOfPoints);
+		}
+	}
+	// std::cout << avgPoint.getDataPoint(0);
+	for (size_t i = 0; i < dimension; i++)
+		avgPoint[i] /= numberOfPoints;
+
+	return avgPoint;
 }
 
 /*
@@ -385,8 +424,11 @@ int kmeansReps(double &bestDistSquaredSum,
 			   size_t &bestClusterOffset,
 			   double *cuCentroids,
 			   size_t centroidOffset,
+			   int *clusters,
+			   size_t sizeOfClusters,
 			   int *cuClusters,
 			   size_t clusterOffset,
+			   double *points,
 			   double *cuPoints,
 			   bool *cuChanged,
 			   const size_t numPoints,
@@ -482,63 +524,21 @@ int kmeansReps(double &bestDistSquaredSum,
 			// memCopy 1 average point
 			//  CUDA: Wordt Cuda kernel
 			// printf("===\ncalc averages\n");
-			for (size_t cluster = 0; cluster < numClusters; ++cluster)
+			for (int cluster = 0; cluster < numClusters; ++cluster)
 			{
-				int threadCount = numBlocks * numThreads; //32 * 32
-				const size_t sizeOfAveragePoints = threadCount * dimension * sizeof(double);
-				std::vector<double> averagePoints(threadCount * dimension, 0.0);
-				double* cuAveragePointsPointer;
-				cudaMalloc(&cuAveragePointsPointer, sizeOfAveragePoints);
-				cudaMemcpy(cuAveragePointsPointer, averagePoints.data(), sizeOfAveragePoints, cudaMemcpyHostToDevice);
-
-				const size_t sizeOfNumberOfPoints = threadCount * sizeof(int);
-				std::vector<int> numberOfPoints(threadCount, 0);
-				int* cuNumberOfPointsPointer;
-				cudaMalloc(&cuNumberOfPointsPointer, sizeOfNumberOfPoints);
-				cudaMemcpy(cuNumberOfPointsPointer, numberOfPoints.data(), sizeOfNumberOfPoints, cudaMemcpyHostToDevice);
-
-				average_of_points_with_cluster<<<numBlocks,numThreads>>>(cuAveragePointsPointer, cluster, cuClusters, clusterOffset, cuPoints, numPoints, dimension, threadRange, cuNumberOfPointsPointer, steps == 2);
-				cudaDeviceSynchronize();
-
-				cudaMemcpy(averagePoints.data(), cuAveragePointsPointer, sizeOfAveragePoints, cudaMemcpyDeviceToHost);
-				cudaMemcpy(numberOfPoints.data(), cuNumberOfPointsPointer, sizeOfNumberOfPoints, cudaMemcpyDeviceToHost);
-
-				std::vector<double> averagePoint(dimension, 0.0);
-				for (int i = 0; i < averagePoints.size(); i++) {
-					//printf("%d: %f\n",i, averagePoints[i]);
-					averagePoint[i%dimension] += averagePoints[i];
-				}
-
-				cudaFree(cuAveragePointsPointer);
-
-				int numberOf = 0;
-				for (int i = 0; i < numberOfPoints.size(); i++) {
-					numberOf += numberOfPoints[i];
-				}
-
-				cudaFree(cuNumberOfPointsPointer);
-				
-				// std::cout << avgPoint.getDataPoint(0);
-				for (int i = 0; i < dimension; i++) {
-					//printf("%d: numpoints: %d averagePoint: %f\n",i, numberOf, averagePoint[i]);
-					averagePoint[i] /= numberOf;
-				}
+				cudaMemcpy(clusters, cuClusters, sizeOfClusters, cudaMemcpyDeviceToHost);
+				std::vector<double> averagePoint = average_of_points_with_cluster(cluster, clusters, clusterOffset, points, numPoints, dimension);
+				cudaMemcpy(cuClusters, clusters, sizeOfClusters, cudaMemcpyHostToDevice);
 
 				std::vector<double> centroid(dimension, 0.0);
 				size_t sizeOfCentroid = sizeof(double)*dimension;
 				cudaMemcpy(centroid.data(), &cuCentroids[centroidOffset + cluster*dimension], sizeOfCentroid, cudaMemcpyDeviceToHost);
 				//printf("--- centroids \n");
-				for (int i = 0; i < dimension; i++)
+				for (int coor = 0; coor < dimension; coor++)
 				{
-					// printf("cucentroids index: %d\n",(int) centroidOffset + 0 * dimension + i);
-					// printf("let's try average\n");
-					// printf("%f\n",averagePoint[i]);
-					// printf("let's try cucentroinds\n");
-					// printf("%f\n",cuCentroids[0]);
-					centroid[i] = averagePoint[i];
-					// printf("%f\n",centroid[i]);
+					centroid[coor] = averagePoint[coor];
+					//printf("%f\n", cuCentroids[centroidOffset + cluster * dimension + coor]);
 				}
-
 				cudaMemcpy(&cuCentroids[centroidOffset + cluster*dimension], centroid.data(), sizeOfCentroid, cudaMemcpyHostToDevice);
 			}
 		}
@@ -659,8 +659,11 @@ int kmeans(Rng &rng,
 			bestClusterOffset,
 			cuCentroidsPointer,			 // CUDA centroids pointer
 			numClusters * r * dimension, // centroids internal offset for this rep
+			&clusters[0],				 // CPU clusters array
+			sizeOfClusters,				 // total clusters size
 			cuClustersPointer,			 // CUDA clusters pointer
 			numPoints * r,	 			 // clusters internal offset for this rep
+			&allPoints[0],
 			cuPointsPointer,
 			cuChangedPointer,
 			numPoints,
