@@ -684,6 +684,7 @@ int kmeans(Rng &rng,
 
 	timer.stop();
 
+	cudaMemcpy(clusters.data(), cuClustersPointer, sizeOfClusters, cudaMemcpyDeviceToHost);
  	cudaFree(cuClustersPointer);
 	cudaFree(cuCentroidsPointer);
 	cudaFree(cuPointsPointer);
