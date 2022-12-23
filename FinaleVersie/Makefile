@@ -7,7 +7,10 @@
 #FLAGS=-O3 -DNDEBUG -std=c++14
 
 # Settings for a debug build
-FLAGS=-std=c++14 -gencode arch=compute_75,code=sm_75 
+FLAGS_COLLAB=-std=c++14 -gencode arch=compute_75,code=sm_75 
+FLAGS_VSC=-std=c++14 -gencode arch=compute_60,code=sm_60 
+MAIN_CALC_CENTROID_GPU=main_centroidGPU.cu
+MAIN_CALC_CENTROID_CPU=main_centroidCPU.cu
 
 NVCC=nvcc
 
@@ -17,4 +20,4 @@ clean:
 	rm -f kmeans
 
 kmeans: main_startcode.cpp rng.cpp
-	$(NVCC) $(FLAGS)  -o kmeans main_startcode.cpp rng.cpp
+	$(NVCC) $(FLAGS_COLLAB)  -o kmeans $(MAIN_CALC_CENTROID_GPU) rng.cpp
