@@ -23,7 +23,7 @@ kmeans: main_startcode.cpp rng.cpp
 	$(MPICXX) -o kmeans_mpi ./main_startcode.cpp ./rng.cpp
 
 run:
-	mpirun -np 3 kmeans_mpi --input /Users/yarne/Documents/datasets/mouse_500x2.csv --output /Users/yarne/Documents/MPI/FinaleVersie/output/mouse_500x2.csv --repetitions 4 --k 6 --seed 1952226
+	mpirun -np 3 kmeans_mpi --input /Users/yarne/Documents/datasets/mouse_500x2.csv --output /Users/yarne/Documents/MPI/FinaleVersie/output/mouse_500x2.csv --repetitions 5 --k 5 --seed 1952226
 
 # # Settings for a debug build
 # FLAGS=-g -std=c++14

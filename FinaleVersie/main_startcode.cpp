@@ -185,14 +185,13 @@ int find_closest_centroid_index_and_distance(double &dist, double *p, std::vecto
 		double currentdist = 0;
 
 		for (size_t i = 0; i < dimension; i++) // p.getSize() or dimension = N
-			currentdist += pow((p[i] - centroids[(offset*dimension) + (c*dimension) + i]), 2);
+			currentdist += pow((p[i] - centroids[offset + (c*dimension) + i]), 2);
 
-		if (currentdist < dist || dist == -1)
+		if (currentdist < dist || dist == std::numeric_limits<double>::max())
 		{
 			dist = currentdist;
 			indexCentroid = c;
 		}
-
 	}
 	return indexCentroid;
 }
@@ -266,11 +265,11 @@ void writeCentroidToDebugFile(std::vector<double> &centroid, std::string &centro
 	@return the amount of steps this run took to complete
  */
 int kmeansReps(double &bestDistSquaredSum,
-			   size_t &bestClusterOffset,
+			   int &bestClusterOffset,
 			   std::vector<double> &centroids,
-			   size_t centroidOffset,
+			   const size_t centroidOffset,
 			   std::vector<int> &clusters,
-			   size_t clusterOffset,
+			   const size_t clusterOffset,
 			   std::vector<double> &allPoints,
 			   const size_t numPoints,
 			   const int numClusters,
@@ -278,12 +277,13 @@ int kmeansReps(double &bestDistSquaredSum,
 			   bool debugClusters,
 			   std::string &centroidDebugFile,
 			   std::string &clustersDebugFile,
-			   const int dimension)
+			   const int dimension
+			   )
 {
 
 	bool changed = true;
 	int steps = 0;
-	// printf("proces %d in function with sum %d\n", mpi_rank, dimension);
+	
 	// std::vector<double> debugCluster;
 	// std::vector<double> debugCentroid;
 	while (changed)
@@ -294,7 +294,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		
 		for (int p = 0; p < numPoints; ++p)
 		{
-			double dist = -1;
+			double dist = std::numeric_limits<double>::max();
 			const int newCluster = find_closest_centroid_index_and_distance(dist, &allPoints[p*dimension], centroids, numClusters, centroidOffset, dimension);
 			distanceSquaredSum += dist;
 
@@ -307,7 +307,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		}
 
 		// printf("proces %d in with offset %f,%f\n", mpi_rank, centroids[centroidOffset],centroids[centroidOffset+1]);
-
+	
 
 		// printf("proces %d in function with sum %d\n", mpi_rank, distanceSquaredSum);
 
@@ -326,7 +326,7 @@ int kmeansReps(double &bestDistSquaredSum,
 		{
 			for (size_t j = 0; j < numClusters; ++j)
 				for (size_t k = 0; k < dimension; ++k)
-					centroids[(centroidOffset*dimension) + (j*dimension) + k] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints,dimension).getDataPoint(k);	
+					centroids[centroidOffset + (j*dimension) + k] = average_of_points_with_cluster(j, clusters, clusterOffset, allPoints,dimension).getDataPoint(k);	
 		}
 
 		if (distanceSquaredSum < bestDistSquaredSum)
@@ -335,7 +335,6 @@ int kmeansReps(double &bestDistSquaredSum,
 			bestDistSquaredSum = distanceSquaredSum;
 		}
 	}
-
 	// if(debugClusters)
 	// 	writeClusterToDebugFile(debugCluster, clustersDebugFile, numPoints);
 	// if(debugCentroids)
@@ -383,8 +382,8 @@ int kmeans(Rng &rng,
 	MPI_Bcast(&dimension, 1, MPI_INT,0,MPI_COMM_WORLD); // broadcast K (dimension)
 
 	// initialize BIG variabels
-	size_t bestClusterLocalOffset=0; //array
-	std::vector<size_t> bestClusterOffset(repetitions,0); //array
+	int bestClusterLocalOffset=0; //array
+	std::vector<int> bestClusterOffset(repetitions,0); //array
 	std::vector<int> clusters ((int)numPoints * repetitions,-1);
 	/**
 	 * with amount of -1 in the matrix = number of points * repetitions
@@ -404,12 +403,6 @@ int kmeans(Rng &rng,
 	if(mpi_rank == mpi_rootRank)
 		choose_centroids_at_random(numClusters, dimension, rng, centroids, repetitions, allPoints);
 
-	// if(mpi_rank != mpi_rootRank)
-	// 	centroids.resize(numClusters * repetitions * dimension);
-	// if(mpi_rank != mpi_rootRank)
-	// 	centroids.resize(numClusters * dimension);
-	// MPI_Bcast(centroids.data(), (int)centroids.size(),MPI_DOUBLE,0,MPI_COMM_WORLD); //broadcast centroids
-
 	if(mpi_rank != mpi_rootRank)
 		allPoints.resize(numPoints*dimension);
 	MPI_Bcast(allPoints.data(), (int)allPoints.size(),MPI_DOUBLE,0,MPI_COMM_WORLD); //broadcast allpoints 
@@ -417,30 +410,34 @@ int kmeans(Rng &rng,
 	std::vector<double> bestDistSquaredSum(repetitions,std::numeric_limits<double>::max()); // can only get better
 	double bestDistSquaredLocalSum = std::numeric_limits<double>::max(); // can only get better
 	std::vector<int> stepsPerRepetition(repetitions,0);			// to save the number of steps each rep needed
-	// int partition = repetitions/mpi_size;
+	
+	// Scatterv - centroids
 	std::vector<int> counts_centroids(mpi_size,0);
 	std::vector<int> displs_centroids(mpi_size,0);
-	for (size_t i = 0; i < repetitions; i++) // number of reps per mpi proces
+	for (size_t i = 0; i < repetitions; i++)// number of reps per mpi proces
 		counts_centroids[i % mpi_size] += numClusters * dimension;
 	for (size_t i=1; i<mpi_size; i++)
 		displs_centroids[i] = displs_centroids[i-1] + counts_centroids[i-1];
 
+	// Gatherv - clusters + Determine cluster location
 	std::vector<int> counts_clusters(mpi_size,0);
 	std::vector<int> displs_clusters(mpi_size,0);
-	for (size_t i = 0; i < repetitions; i++) // number of reps per mpi proces
+	for (size_t i = 0; i < repetitions; i++) // number of clusters per mpi proces
 		counts_clusters[i % mpi_size] += numPoints;
 	for (size_t i=1; i<mpi_size; i++)
 		displs_clusters[i] = displs_clusters[i-1] + counts_clusters[i-1];
 	
+	// Gatherv - steps
+	std::vector<int> counts_steps(mpi_size,0);
+	std::vector<int> displs_steps(mpi_size,0);
+	for (size_t i = 0; i < repetitions; i++) // number of clusters per mpi proces
+		counts_steps[i % mpi_size] += 1;
+	for (size_t i=1; i<mpi_size; i++)
+		displs_steps[i] = displs_steps[i-1] + counts_steps[i-1];
+	
 	// Do the k-means routine a number of times, each time starting from
 	// different random centroids (use Rng::pickRandomIndices), and keep
 	// the best result of these repetitions.
-	// if(mpi_rank == mpi_rootRank){
-	// 	printf("centroid rep 0: %d, %f\n", mpi_rank, centroids[0]);
-	// 	printf("centroid rep 1: %d, %f\n", mpi_rank, centroids[numClusters * dimension * 1]);
-	// 	printf("centroid rep 2: %d, %f\n", mpi_rank, centroids[numClusters * dimension * 2]);
-	// 	printf("centroid rep 3: %d, %f\n", mpi_rank, centroids[numClusters * dimension * 3]);
-	// }
 	MPI_Scatterv(centroids.data(),counts_centroids.data(),displs_centroids.data(),MPI_DOUBLE,centroids.data(),counts_centroids[mpi_rank],MPI_DOUBLE,mpi_rootRank,MPI_COMM_WORLD);
 
 	int numberOfRepsPerRank = counts_centroids[mpi_rank]/(numClusters*dimension);
@@ -448,36 +445,29 @@ int kmeans(Rng &rng,
 	int cluster_location = 0;
 	for (size_t i = 0; i < mpi_rank; i++)
 		cluster_location += counts_clusters[i];
-	printf("rank %d: offset: %d and reps: %f\n", mpi_rank, cluster_location, centroids[0]);
 
 	// for (int r = mpi_rank*partition; r < mpi_rank*partition+partition; r++)
-	//cluster offset moet ook + location
-	for (int r = 0; r < numberOfRepsPerRank; r++)
-	{
-		recv_steps[r] = kmeansReps(bestDistSquaredLocalSum, bestClusterLocalOffset, centroids, numClusters*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName, dimension);
-		printf("rank: %d, clusterOffset %d, sum: %d\n", mpi_rank, bestClusterLocalOffset, bestDistSquaredLocalSum);
+	for (int r = 0; r < numberOfRepsPerRank; r++){
+		recv_steps[r] = kmeansReps(bestDistSquaredLocalSum, bestClusterLocalOffset, centroids, numClusters*dimension*r, clusters, numPoints*r, allPoints, numPoints, numClusters, false, false, centroidDebugFileName, clusterDebugFileName, dimension);
 	}
-	MPI_Gather(clusters.data(), numPoints*numberOfRepsPerRank, MPI_INT, &clusters[cluster_location],numPoints*numberOfRepsPerRank, MPI_INT, mpi_rootRank,
+	// printf("rank: %d, bestclusterOffset: %d, sum: %f\n", mpi_rank, bestClusterLocalOffset, bestDistSquaredLocalSum);
+	bestClusterLocalOffset += cluster_location;
+	MPI_Gatherv(clusters.data(), numPoints*numberOfRepsPerRank, MPI_INT, clusters.data(), counts_clusters.data(), displs_clusters.data(), MPI_INT, mpi_rootRank,
             MPI_COMM_WORLD);
-	MPI_Gather(recv_steps, numberOfRepsPerRank, MPI_INT, stepsPerRepetition.data(),numberOfRepsPerRank, MPI_INT, mpi_rootRank,
+	MPI_Gatherv(recv_steps, numberOfRepsPerRank, MPI_INT, stepsPerRepetition.data(), counts_steps.data(), displs_steps.data(), MPI_INT, mpi_rootRank, 
             MPI_COMM_WORLD);
-	// MPI_Gather(&bestClusterLocalOffset, 1, MPI_INT, bestClusterOffset.data(),1, MPI_INT, mpi_rootRank,
-    //         MPI_COMM_WORLD);
-	// MPI_Gather(&bestDistSquaredLocalSum, 1, MPI_INT, bestDistSquaredSum.data(),1, MPI_INT, mpi_rootRank,
-    //         MPI_COMM_WORLD);
+	MPI_Gather(&bestDistSquaredLocalSum, 1, MPI_DOUBLE, bestDistSquaredSum.data(),1, MPI_DOUBLE, mpi_rootRank,
+				MPI_COMM_WORLD);
+	MPI_Gather(&bestClusterLocalOffset, 1, MPI_INT, bestClusterOffset.data(),1, MPI_INT, mpi_rootRank,
+				MPI_COMM_WORLD);
 
 	double t2 = MPI_Wtime();
 
 	if (mpi_rank == mpi_rootRank){
-		// for (int r = 0; r < repetitions*numPoints; r++)
-		// {
-		// 	if(r%numPoints==0)
-		// 		printf("\n\n");
-		// 	printf("%d,", clusters[r]);
-			
-		// }
-		// for (int r = 0; r < repetitions; r++)
-		// 	printf("%d\n", bestClusterOffset[r]);
+		bestDistSquaredLocalSum = *std::min_element(bestDistSquaredSum.begin(),bestDistSquaredSum.end());
+		std::vector<double>::iterator it = std::min_element(bestDistSquaredSum.begin(), bestDistSquaredSum.end());
+		int smallestValue_index = std::distance(bestDistSquaredSum.begin(), it);
+		bestClusterLocalOffset = bestClusterOffset[smallestValue_index];
 		
 		// Some example output, of course you can log your timing data anyway you like.
 		std::cout << "# Type,blocks,threads,MPI processes,file,seed,clusters,repetitions,bestdistsquared,timeinseconds" << std::endl;
@@ -486,14 +476,12 @@ int kmeans(Rng &rng,
 				<< repetitions << "," << bestDistSquaredLocalSum << "," << /*timer.durationNanoSeconds() / 1e9*/ t2-t1
 				<< std::endl;
 
-		// printf("%d has step %d\n", mpi_rank, stepsPerRepetition[1]);
 		// Write the number of steps per repetition, kind of a signature of the work involved
 		csvOutputFile.write(stepsPerRepetition, "# Steps: ");
 		// Write best clusters to csvOutputFile, something like
 
 		// Get best cluster from repetitions -> example output shows the first cluster, we use the best cluster for output
 		std::vector<int> bestCluster(&clusters[bestClusterLocalOffset], &clusters[bestClusterLocalOffset + numPoints]);
-		// printf("rank: %d, %d\n", mpi_rank, &clusters[bestClusterOffset+ numPoints+1]);
 		csvOutputFile.write(bestCluster);
 	}
 
